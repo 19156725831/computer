@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主从D触发器‑带信号流动光点【修复D线重复】</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:10px;padding:0;background:#eef2f6;color:#1f2933;font-family:"Microsoft YaHei",Consolas,monospace;}
+h1{margin:4px 0;font-size:18px;color:#2f5d8c;text-align:center}
+.sub{text-align:center;font-size:13px;color:#556}
+.wrap{max-width:1300px;margin:0 auto;}
+.top-row{display:flex;align-items:flex-start;gap:10px;justify-content:center;}
+.card-svg{background:#fff;border-radius:10px;padding:12px;box-shadow:0 2px 8px #00000012;}
+.ctrl-top-right{width:260px;background:#fff;border-radius:10px;padding:10px;box-shadow:0 2px 8px #00000012;}
+.state-bottom-left{width:260px;background:#fff;border-radius:10px;padding:10px;box-shadow:0 2px 8px #00000012;}
+svg{display:block}
+button{font-size:12px;padding:5px 9px;border-radius:5px;border:1px solid #b6c2cf;background:#fff;cursor:pointer;margin:2px 1px;}
+button:hover{background:#edf2f8;}
+button.stepbtn{background:#1677ff;color:#fff;border-color:#1677ff;}
+#msg{margin:8px auto;padding:8px 14px;background:#fff8e6;border-left:4px solid #ff9500;border-radius:0 6px 6px 0;min-height:36px;max-width:1000px;}
+.note{margin:6px 0;padding:6px 10px;background:#f8fafc;border-left:4px solid #0b7285;border-radius:0 6px 6px 0;font-size:11px;}
+.stateRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.stateBox{width:110px;text-align:center;padding:4px;border:1px solid #dde3ea;border-radius:5px;background:#fdfdfd;}
+.stateVal{font-size:20px;font-weight:bold;margin:2px 0;}
+.lab{font-size:11px;color:#667;}
+h3{margin:0 0 6px;font-size:13px;color:#2f5d8c;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>主从D触发器仿真【信号流动光点】</h1>
+<p class="sub">右上=控制面板；左下=状态面板；光点=信号流动示意，导线颜色代表电压电平</p>
+
+<div class="top-row">
+  <div class="card-svg">
+    <h3 style="text-align:center">电路原理图</h3>
+    <svg viewBox="0 0 960 520" id="ckt" width="820">
+      <defs>
+        <animate id="animFlow" attributeName="cx" dur="1.2s" repeatCount="indefinite" fill="freeze"/>
+        <animate id="animFlowY" attributeName="cy" dur="1.2s" repeatCount="indefinite" fill="freeze"/>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="ctrl-top-right">
+    <h3>控制面板</h3>
+    <div>
+      <button id="btnD0">D=0</button>
+      <button id="btnD1">D=1</button>
+    </div>
+    <div>
+      <button class="stepbtn" id="btnRise">上升沿 CLK=1</button>
+      <button class="stepbtn" id="btnFall">下降沿 CLK=0</button>
+    </div>
+    <div>
+      <button id="btnCLR">CLR清零</button>
+      <button id="btnPRE">PRE置1</button>
+      <button id="btnReset">重置</button>
+    </div>
+    <div class="note">
+光点=信号流动示意<br/>
+颜色=当前电平电压<br/>
+操作：设置D→上升沿→下降沿
+    </div>
+  </div>
+
+  <div class="state-bottom-left">
+    <h3>实时状态</h3>
+    <div class="stateRow">
+      <div class="stateBox">
+        <div class="lab">CLK</div>
+        <div class="stateVal" id="vCLK">0</div>
+        <div class="lab" id="sCLK">低电平</div>
+      </div>
+      <div class="stateBox">
+        <div class="lab">主锁存</div>
+        <div class="stateVal" id="vM">0</div>
+        <div class="lab" id="sM">保持</div>
+      </div>
+      <div class="stateBox">
+        <div class="lab">从锁存</div>
+        <div class="stateVal" id="vS">0</div>
+        <div class="lab" id="sS">保持</div>
+      </div>
+      <div class="stateBox">
+        <div class="lab">输出 Q</div>
+        <div class="stateVal" id="vQ">0</div>
+        <div class="lab" id="sQ">输出</div>
+      </div>
+    </div>
+    <div class="note">
+CLK=1：主开，从关<br/>
+CLK=0：主关，从开
+    </div>
+  </div>
+</div>
+
+<div id="msg">操作提示：设置D，点上升沿CLK=1，再点下降沿CLK=0。观察导线颜色+流动光点。</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const OFF='#b8c4d1', ON='#ff8800', BLUE='#2f5d8c';
+const FILL_ON='#ffe8cc',FILL_OFF='#ffffff',DIM='#8896a4';
+const BAD='#c82423', CLK_C='#6741d9', NAND_C='#087474';
+const C=$('ckt');
+let clk=0, dIn=0, master=0, slave=0;
+
+const cad=(tag,attr,parent)=>{
+  const el=document.createElementNS(NS,tag);
+  for(let k in attr) el.setAttribute(k,attr[k]);
+  (parent||C).appendChild(el);
+  return el;
+};
+const txt=(x,y,str,size=11,color="#444",anchor="middle")=>{
+  const t=cad('text',{x:x,y:y,'font-size':size,fill:color,"text-anchor":anchor,"font-family":"Consolas"});
+  t.textContent=str;
+  return t;
+};
+const elRef={};
+const flowDots = [];
+function makeFlowDot(x0,y0,x1,y1,color){
+  const dot = cad('circle',{cx:x0, cy:y0, r:4, fill:color, opacity:0});
+  const anX = cad('animate',{attributeName:"cx", from:x0, to:x1, dur:"1.1s", repeatCount:"indefinite"} , dot);
+  const anY = cad('animate',{attributeName:"cy", from:y0, to:y1, dur:"1.1s", repeatCount:"indefinite"} , dot);
+  return {dot, anX, anY, x0,y0,x1,y1};
+}
+
+//振荡器 + GND虚线回路
+cad('rect',{x:20,y:240,width:70,height:60,rx:6,stroke:CLK_C,"stroke-width":2,fill:"#f4f7ff"});
+txt(55,265,"振荡器",12,CLK_C);
+txt(55,282,"(外部)",11,DIM);
+txt(55,302,"输出CLK",11,CLK_C);
+cad('line',{x1:55,y1:300,x2:55,y2:340,stroke:"#777","stroke-width":2,"stroke-dasharray":"5,4"});
+cad('line',{x1:55,y1:340,x2:220,y2:340,stroke:"#777","stroke-width":2,"stroke-dasharray":"5,4"});
+txt(70,355,"GND(回路)",10,"#555");
+
+//绘制锁存器，统一左右引脚，D、EN两个输入
+function drawLatch(x,y,w,h,name,key){
+  const box=cad('rect',{x:x,y:y,width:w,height:h,rx:8,stroke:BLUE,"stroke-width":2.2,fill:FILL_OFF});
+  txt(x+w/2,y+28,name,14,BLUE);
+  txt(x+w/2,y+50,"门控D锁存器",10,DIM);
+  txt(x+w/2,y+72,"与非门交叉反馈",10,NAND_C);
+  //D输入（方框上引脚短线）
+  txt(x-14,y+64,"D",12,BLUE,"end");
+  const dWire=cad('line',{x1:x-48,y1:y+64,x2:x,y2:y+64,stroke:OFF,"stroke-width":2.5});
+  //EN输入
+  txt(x-14,y+h-32,"EN",11,CLK_C,"end");
+  const enWire=cad('line',{x1:x-48,y1:y+h-32,x2:x,y2:y+h-32,stroke:OFF,"stroke-width":2.5});
+  const enDot=cad('circle',{cx:x-48,cy:y+h-32,r:5,fill:FILL_OFF,stroke:OFF});
+  //输出Q
+  const qWire=cad('line',{x1:x+w,y1:y+64,x2:x+w+44,y2:y+64,stroke:OFF,"stroke-width":2.5});
+  const qDot=cad('circle',{cx:x+w+48,cy:y+64,r:5,fill:FILL_OFF,stroke:OFF});
+  txt(x+w+62,y+68,"Q",12,BLUE,"start");
+  const qValTxt=txt(x+w+82,y+68,"0",14,DIM,"start");
+  const noteText=txt(x+w/2,y+h-12,"",10.5,DIM);
+  //电源引脚
+  cad('line',{x1:x+w*0.3,y1:y+h,x2:x+w*0.3,y2:y+h+26,stroke:"#555","stroke-width":2});
+  txt(x+w*0.3,y+h+38,"VCC +5V",10,"#222");
+  cad('line',{x1:x+w*0.7,y1:y+h,x2:x+w*0.7,y2:y+h+26,stroke:"#555","stroke-width":2,"stroke-dasharray":"4,3"});
+  txt(x+w*0.7,y+h+38,"GND",10,"#222");
+  elRef[key]={box,dWire,enWire,enDot,qWire,qDot,qValTxt,noteText};
+}
+
+drawLatch(200,40,150,160,"主锁存器(Master)","M");
+drawLatch(500,40,150,160,"从锁存器(Slave)","S");
+
+//外部D输入标签与信号圆点，【删除重复的wireDext连线！】
+txt(120,120,"外部D输入",13,BLUE,"end");
+const dInDot=cad('circle',{cx:152,cy:104,r:7,fill:FILL_OFF,stroke:OFF});
+const dInValTxt=txt(152,130,"0",16,DIM);
+
+//CLK总线
+const wireOscToClk=cad('line',{x1:90,y1:270,x2:130,y2:270,stroke:OFF,"stroke-width":3});
+txt(75,250,"→CLK",11,CLK_C);
+const clkDot=cad('circle',{cx:134,cy:270,r:7,fill:FILL_OFF,stroke:OFF});
+const clkValTxt=txt(134,300,"0",16,DIM);
+const clkMainLine=cad('line',{x1:144,y1:270,x2:700,y2:270,stroke:OFF,"stroke-width":3});
+
+//T分支
+const t1=cad('circle',{cx:262,cy:270,r:4,fill:OFF,stroke:OFF});
+const wireClkToMEn=cad('line',{x1:262,y1:270,x2:262,y2:170,stroke:OFF,"stroke-width":2.5});
+const t2=cad('circle',{cx:530,cy:270,r:4,fill:OFF,stroke:OFF});
+
+//反相器NOT，带电源地
+const invTri=cad('path',{d:"M 530 254 L530 286 L558 270 Z",fill:FILL_OFF,stroke:CLK_C,"stroke-width":2.2});
+const invBubble=cad('circle',{cx:564,cy:270,r:5,fill:FILL_OFF,stroke:CLK_C});
+txt(542,300,"NOT反相器",10,DIM);
+cad('line',{x1:544,y1:286,x2:544,y2:312,stroke:"#555","stroke-width":2});
+txt(544,324,"VCC +5V",10,"#222");
+cad('line',{x1:562,y1:286,x2:562,y2:312,stroke:"#555","stroke-width":2,"stroke-dasharray":"4,3"});
+txt(562,324,"GND",10,"#222");
+
+const wireInvToSEN=cad('line',{x1:570,y1:270,x2:640,y2:270,stroke:OFF,"stroke-width":2.5});
+const wireSENdown=cad('line',{x1:640,y1:270,x2:640,y2:170,stroke:OFF,"stroke-width":2.5});
+
+//主Q输出→从D输入
+const wireMasterToSlaveD=cad('line',{x1:350,y1:104,x2:500,y2:104,stroke:OFF,"stroke-width":3});
+txt(420,92,"【内部】主Q→从D",10,"#c2410c");
+
+//输出Q、Q非
+const wireOutQ=cad('line',{x1:650,y1:104,x2:780,y2:104,stroke:OFF,"stroke-width":3});
+const outQDot=cad('circle',{cx:788,cy:104,r:7,fill:FILL_OFF,stroke:OFF});
+txt(788,84,"Q",13,BLUE);
+const qOutTxt=txt(788,132,"0",17,DIM);
+const wireQnot1=cad('line',{x1:780,y1:104,x2:780,y2:360,stroke:OFF,"stroke-width":2.5});
+const wireQnot2=cad('line',{x1:780,y1:360,x2:860,y2:360,stroke:OFF,"stroke-width":2.5});
+const qbDot=cad('circle',{cx:830,cy:360,r:6,fill:FILL_OFF,stroke:OFF});
+txt(848,364,"Q̄",13,BLUE);
+
+//CLR PRE示意总线
+txt(140,310,"CLR",11,BAD,"end");
+txt(740,310,"PRE",11,BAD,"start");
+const wireClrPreBus=cad('line',{x1:160,y1:310,x2:720,y2:310,stroke:OFF,"stroke-width":2});
+txt(400,330,"CLR/PRE异步控制【仅示意总线】",10,BAD);
+
+//光点，修正D光点终点直接到主锁存D引脚
+flowDots.push( makeFlowDot(152,104, 200,104, "#ff8800") ); //外部D，直接到主锁D引脚
+flowDots.push( makeFlowDot(90,270, 262,270, "#6741d9") ); //clk到主en分支
+flowDots.push( makeFlowDot(570,270, 640,270, "#6741d9") ); //反相输出
+flowDots.push( makeFlowDot(640,270, 640,170, "#6741d9") ); //到从en竖线
+flowDots.push( makeFlowDot(350,104, 500,104, "#ff8800") ); //主→从D
+flowDots.push( makeFlowDot(650,104, 780,104, "#ff8800") ); //Q输出
+
+function updateFlowDots(){
+  const invOut = clk?0:1;
+  const dotEnable = [
+    dIn,
+    clk,
+    invOut,
+    invOut,
+    master,
+    slave
+  ];
+  for(let i=0;i<flowDots.length;i++){
+    const fd = flowDots[i];
+    if(dotEnable[i]){
+      fd.dot.setAttribute("opacity","1");
+      fd.anX.beginElement();
+      fd.anY.beginElement();
+    }else{
+      fd.dot.setAttribute("opacity","0");
+    }
+  }
+}
+
+function latch(curVal,d,en){ return en ? d : curVal; }
+function stepLogic(){
+  const masterEN=(clk===1);
+  const slaveEN=(clk===0);
+  master=latch(master,dIn,masterEN);
+  slave=latch(slave,master,slaveEN);
+}
+
+function paintAll(){
+  stepLogic();
+  const qOut=slave;
+  const qbOut=1-qOut;
+
+  //D输入圆点
+  dInDot.setAttribute("fill",dIn?FILL_ON:FILL_OFF);
+  dInDot.setAttribute("stroke",dIn?ON:OFF);
+  dInValTxt.textContent=dIn; dInValTxt.setAttribute("fill",dIn?ON:DIM);
+  //主锁存器方框上的D引脚线
+  const M=elRef["M"];
+  M.dWire.setAttribute("stroke",dIn?ON:OFF);
+
+  //CLK全部线路
+  clkDot.setAttribute("fill",clk?FILL_ON:FILL_OFF);
+  clkDot.setAttribute("stroke",clk?CLK_C:OFF);
+  clkValTxt.textContent=clk; clkValTxt.setAttribute("fill",clk?CLK_C:DIM);
+  clkMainLine.setAttribute("stroke",clk?CLK_C:OFF);
+  wireOscToClk.setAttribute("stroke",clk?CLK_C:OFF);
+  wireClkToMEn.setAttribute("stroke",clk?CLK_C:OFF);
+  t1.setAttribute("fill",clk?CLK_C:OFF);
+  t2.setAttribute("fill",clk?CLK_C:OFF);
+
+  //主→从数据线
+  wireMasterToSlaveD.setAttribute("stroke",master?ON:OFF);
+
+  //反相器输出
+  const invOut = clk?0:1;
+  invTri.setAttribute('fill', invOut?FILL_ON:FILL_OFF);
+  invTri.setAttribute('stroke', invOut?CLK_C:OFF);
+  invBubble.setAttribute('fill', invOut?FILL_ON:FILL_OFF);
+  invBubble.setAttribute('stroke', invOut?CLK_C:OFF);
+  wireInvToSEN.setAttribute("stroke",invOut?CLK_C:OFF);
+  wireSENdown.setAttribute("stroke",invOut?CLK_C:OFF);
+
+  //主锁存器
+  const mEn=(clk===1);
+  M.enDot.setAttribute("fill",mEn?FILL_ON:FILL_OFF);
+  M.enDot.setAttribute("stroke",mEn?CLK_C:OFF);
+  M.enWire.setAttribute("stroke",mEn?CLK_C:OFF);
+  M.box.setAttribute("fill",mEn?FILL_ON:FILL_OFF);
+  M.box.setAttribute("stroke",mEn?CLK_C:BLUE);
+  M.qDot.setAttribute("fill",master?FILL_ON:FILL_OFF);
+  M.qDot.setAttribute("stroke",master?ON:OFF);
+  M.qValTxt.textContent=master; M.qValTxt.setAttribute("fill",master?ON:DIM);
+  M.noteText.textContent=mEn?"【透明】跟随外部D":"【锁存】保持数值";
+  M.noteText.setAttribute("fill",mEn?CLK_C:DIM);
+
+  //从锁存器
+  const sEn=(clk===0);
+  const S=elRef["S"];
+  S.enDot.setAttribute("fill",sEn?FILL_ON:FILL_OFF);
+  S.enDot.setAttribute("stroke",sEn?CLK_C:OFF);
+  S.enWire.setAttribute("stroke",sEn?CLK_C:OFF);
+  S.box.setAttribute("fill",sEn?FILL_ON:FILL_OFF);
+  S.box.setAttribute("stroke",sEn?CLK_C:BLUE);
+  S.qDot.setAttribute("fill",slave?FILL_ON:FILL_OFF);
+  S.qDot.setAttribute("stroke",slave?ON:OFF);
+  S.qValTxt.textContent=slave; S.qValTxt.setAttribute("fill",slave?ON:DIM);
+  S.noteText.textContent=sEn?"【透明】接收主输出":"【锁存】保持输出Q";
+  S.noteText.setAttribute("fill",sEn?CLK_C:DIM);
+
+  //输出Q Q非
+  wireOutQ.setAttribute("stroke",qOut?ON:OFF);
+  outQDot.setAttribute("fill",qOut?FILL_ON:FILL_OFF);
+  outQDot.setAttribute("stroke",qOut?ON:OFF);
+  qOutTxt.textContent=qOut; qOutTxt.setAttribute("fill",qOut?ON:DIM);
+  wireQnot1.setAttribute("stroke",qbOut?ON:OFF);
+  wireQnot2.setAttribute("stroke",qbOut?ON:OFF);
+  qbDot.setAttribute("fill",qbOut?FILL_ON:FILL_OFF);
+  qbDot.setAttribute("stroke",qbOut?ON:OFF);
+
+  updateFlowDots();
+
+  //状态面板
+  $("vCLK").textContent=clk;
+  $("sCLK").textContent=clk?"CLK=1高电平":"CLK=0低电平";
+  $("vM").textContent=master;
+  $("sM").textContent=mEn?"透明跟随D":"锁存保持";
+  $("vS").textContent=slave;
+  $("sS").textContent=sEn?"透明接收主":"锁存输出";
+  $("vQ").textContent=qOut;
+}
+
+//按钮事件
+$("btnD0").onclick=()=>{dIn=0; paintAll();$("msg").innerText="D设置为0，观察D线上光点";};
+$("btnD1").onclick=()=>{dIn=1; paintAll();$("msg").innerText="D设置为1，D线上出现流动光点";};
+$("btnRise").onclick=()=>{
+  if(clk===1){$("msg").innerText="已经CLK=1";return;}
+  clk=1; paintAll();
+  $("msg").innerText="上升沿 CLK=1：CLK线路出现紫色光点，主锁存打开抓取D；从锁存关闭，Q不变";
+};
+$("btnFall").onclick=()=>{
+  if(clk===0){$("msg").innerText="已经CLK=0";return;}
+  clk=0; paintAll();
+  $("msg").innerText="下降沿 CLK=0：CLK光点消失；反相器线路出现紫色光点打开从锁存；数据光点流到Q输出引脚";
+};
+$("btnCLR").onclick=()=>{master=0;slave=0; paintAll();$("msg").innerText="异步CLR清零，Q=0";};
+$("btnPRE").onclick=()=>{master=1;slave=1; paintAll();$("msg").innerText="异步PRE置1，Q=1";};
+$("btnReset").onclick=()=>{clk=0;dIn=0;master=0;slave=0; paintAll();$("msg").innerText="全部重置";};
+
+paintAll();
+</script>
+</body>
+</html>
+<!-- （注：内容由AI生成） -->
