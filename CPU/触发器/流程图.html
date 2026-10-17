@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>从硅到寄存器 · 可动手原理图（修正版）</title>
+<style>
+:root{--bg:#0b0f1a;--card:#101726;--line:#22304a;--txt:#e2e8f0;--sub:#8fa3bf;
+--cyan:#22d3ee;--green:#4ade80;--red:#f87171;--orange:#fb923c;--gold:#fbbf24;--purple:#a78bfa;}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6}
+header{max-width:960px;margin:0 auto;padding:42px 20px 18px;text-align:center}
+header h1{font-size:27px}header p{color:var(--sub);margin-top:6px;font-size:13.5px}
+nav{position:sticky;top:0;z-index:9;background:rgba(11,15,26,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .in{max-width:960px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:9px 16px}
+nav a{color:var(--sub);text-decoration:none;font:600 13px ui-monospace,monospace;padding:5px 12px;border-radius:8px;white-space:nowrap}
+nav a.cur{color:#0b0f1a;background:var(--cyan)}
+main{max-width:960px;margin:0 auto;padding:22px 14px 40px}
+section.layer{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px;scroll-margin-top:64px}
+.lh{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.badge{flex:0 0 auto;font:800 13px ui-monospace,monospace;color:#0b0f1a;background:var(--cyan);border-radius:8px;padding:3px 10px}
+.l2b{background:var(--green)}.l3b{background:var(--gold)}.l4b{background:var(--orange)}.l5b{background:var(--purple)}
+.lh h2{font-size:18.5px}.lh .sub{color:var(--sub);font:500 11.5px ui-monospace,monospace}
+.svgwrap{margin:6px 0 2px;text-align:center}.svgwrap svg{width:100%;max-width:920px;height:auto}
+.panel{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;background:#0d1422;border:1px solid #1c2a44;border-radius:12px;padding:11px 14px;margin:6px 0 8px}
+.panel .grp{display:flex;gap:9px;align-items:center;padding-right:12px;border-right:1px dashed #26375a}
+.panel .grp:last-child{border-right:0}
+.ctl-l{font:600 12.5px ui-monospace,monospace;color:var(--sub)}
+.sw{position:relative;display:inline-block;width:50px;height:26px;cursor:pointer}
+.sw input{opacity:0;width:0;height:0}
+.sw .kn{position:absolute;inset:0;background:#1c2a44;border:1px solid #33486e;border-radius:26px;transition:.18s}
+.sw .kn::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#64748b;transition:.18s}
+.sw input:checked+.kn{background:#14432f;border-color:var(--green)}
+.sw input:checked+.kn::before{transform:translateX(24px);background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.7)}
+.btn{cursor:pointer;background:#16233c;color:var(--gold);border:1px solid #3a4d73;border-radius:10px;padding:8px 16px;font:700 13px ui-monospace,monospace;transition:.12s}
+.btn:hover{background:#1d2f52}.btn:active{transform:translateY(2px)}
+.btn.tab{color:#a5c0e1}.btn.tab.active{background:#0f2033;color:var(--cyan);border-color:var(--cyan)}
+.read{font:700 14px ui-monospace,monospace;background:#0a0f1b;border:1px solid #26375a;border-radius:8px;padding:5px 12px;color:var(--cyan)}
+.read b{color:var(--gold)}
+.numin{width:74px;background:#0a0f1b;border:1px solid #26375a;border-radius:8px;color:var(--gold);font:700 14px ui-monospace,monospace;padding:5px 8px;text-align:center}
+.hint{width:100%;text-align:center;color:var(--sub);font-size:12.5px}
+ul.pts{list-style:none;margin:4px 0 6px;display:grid;gap:5px}
+ul.pts li{position:relative;padding-left:17px;color:#c7d4e8;font-size:13.5px}
+ul.pts li::before{content:"";position:absolute;left:2px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--cyan)}
+.l2 .pts li::before{background:var(--green)}.l3 .pts li::before{background:var(--gold)}
+.l4 .pts li::before{background:var(--orange)}.l5 .pts li::before{background:var(--purple)}
+.conn{display:flex;justify-content:center;padding:12px 0}
+.conn .tip{font:600 12.5px ui-monospace,monospace;color:var(--sub);background:#141d31;border:1px dashed #2c3e5d;border-radius:999px;padding:5px 15px}
+footer{max-width:960px;margin:0 auto;padding:0 16px 50px;text-align:center;color:var(--sub);font-size:13.5px}
+footer b{color:var(--gold)}
+/* ===== SVG ===== */
+.wire{stroke:#3f5170;stroke-width:2.4;fill:none;stroke-linecap:round;transition:stroke .15s}
+.wire.h{stroke:var(--gold);stroke-dasharray:7 8;animation:df .7s linear infinite;filter:drop-shadow(0 0 3px rgba(251,191,36,.45))}
+@keyframes df{to{stroke-dashoffset:-15}}
+.wire.v{stroke:var(--red);stroke-width:3}
+.wire.g{stroke:#64748b}
+.gate{fill:#1a2740;stroke:#7c8db0;stroke-width:2}
+.bub{fill:#101726;stroke:#7c8db0;stroke-width:2}
+.lamp{fill:#161f31;stroke:#41527a;stroke-width:2;transition:.15s}
+.lamp.on{fill:#fde68a;stroke:var(--gold);filter:drop-shadow(0 0 9px rgba(251,191,36,.9))}
+.lb{fill:#cbd5e1;font:600 13px ui-monospace,monospace}
+.lbs{fill:#8fa3bf;font:500 11px ui-monospace,monospace}
+.gtt{fill:#a5c0e1;font:700 12.5px ui-monospace,monospace;text-anchor:middle}
+.dotn{fill:#e2e8f0}
+.ffbox{fill:#152238;stroke:#3a4d73;stroke-width:1.6}
+.fft{fill:#9fb6d8;font:700 13px ui-monospace,monospace}
+.chip{fill:#1a2740;stroke:#33486e;stroke-width:1.5}
+.tth{fill:#e2e8f0;font:600 12.5px ui-monospace,monospace;text-anchor:middle}
+.ttd{fill:#8fa3bf;font:600 12px ui-monospace,monospace;text-anchor:middle}
+.ttc{fill:#fbbf24;font:800 12px ui-monospace,monospace;text-anchor:middle}
+.subblk{fill:#141d31;stroke:#2c3e5d;stroke-width:1.5;transition:.2s}
+.subblk.act{stroke:var(--gold);stroke-width:2.4;filter:drop-shadow(0 0 6px rgba(251,191,36,.5))}
+.atom{fill:#2b3648;stroke:#5b6b82;stroke-width:1.5;transition:.3s}
+.atom.imp{stroke-width:2.6}
+.bond{stroke:#334155;stroke-width:1.6}
+.at{fill:#cbd5e1;font:600 11px ui-monospace,monospace;text-anchor:middle}
+@keyframes dr{0%,100%{transform:translate(0,0)}50%{transform:translate(24px,-16px)}}
+.drift{animation:dr 3.4s ease-in-out infinite}
+@keyframes clkf{0%,100%{stroke:var(--gold);opacity:1}50%{stroke:#fff7d6;opacity:.55}}
+.clkfire{animation:clkf .5s 2}
+.pch{fill:#22c55e;opacity:0;transition:.25s;filter:drop-shadow(0 0 7px rgba(34,197,94,.8))}
+.pch.on{opacity:.85}
+.warn{color:var(--red)!important}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>从硅到寄存器 · 可动手原理图</h1>
+  <p>金色流动线 = 导通路径（虚线沿信号方向流动）· 灰色箭头 = 接线方向 · 每层都能拨开关 / 按按钮 / 输数字</p>
+</header>
+
+<nav><div class="in">
+  <a href="#l1">L1 寄存器</a><a href="#l2">L2 触发器</a><a href="#l3">L3 逻辑门</a><a href="#l4">L4 MOSFET</a><a href="#l5">L5 掺杂硅</a>
+</div></nav>
+
+<main>
+
+<!-- ================= L1 寄存器 ================= -->
+<section class="layer l1" id="l1">
+  <div class="lh"><span class="badge">L1</span>
+    <div><h2>寄存器 Register —— N 个 D 触发器并排，共用时钟</h2><div class="sub">4 位缩小版（真实 CPU = 64 个）· 支持直接输入十进制数</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 510">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7c8db0"/></marker>
+      <g id="ffbox">
+        <rect class="ffbox" width="120" height="84" rx="6"/>
+        <text class="fft" x="14" y="28">D</text>
+        <text class="fft" x="106" y="28" text-anchor="end">Q</text>
+        <path d="M0,52 L14,59 L0,66 Z" fill="#3a4d73"/>
+        <text class="fft" x="22" y="64" font-size="11" fill="#6d84a8">C</text>
+      </g>
+    </defs>
+    <text class="lbs" x="150" y="52" text-anchor="middle" fill="#fbbf24">CLK 时钟总线（共用！）</text>
+    <path id="l1-clkbus" class="wire g" d="M150,62 V474"/>
+    <g id="l1-rows"></g>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">逐位拨：</span><span id="l1-sw" style="display:flex;gap:8px;align-items:center"></span></div>
+    <div class="grp"><span class="ctl-l">或直接输数字：</span><input type="number" class="numin" id="l1-num" min="0" max="15" value="0"></div>
+    <div class="grp"><button class="btn" id="l1-clkbtn">⏰ CLK 上升沿 · 写入</button>
+      <label class="sw"><input type="checkbox" id="l1-auto"><span class="kn"></span></label><span class="ctl-l">自动时钟</span></div>
+    <div class="grp"><span class="ctl-l">输入 D =</span><span class="read" id="l1-din">0000 <b>(0)</b></span>
+      <span class="ctl-l">寄存器 Q =</span><span class="read" id="l1-qout">0000 <b>(0)</b></span></div>
+    <div class="hint">拨好输入（或输个数字）→ 按一下 CLK：输出才更新；之后随便改输入，Q 纹丝不动 —— 这就是"锁存"。</div>
+  </div>
+  <ul class="pts">
+    <li>寄存器 = 多个 D 触发器 + <b>同一根时钟线</b>（所有位同一瞬间写入，注意每行的 C 引脚都接到总线）</li>
+    <li>64 位寄存器 = 64 个这样的触发器，原理完全一样</li>
+    <li>它比内存快，因为没有地址译码 —— 时钟一拍数据直接进</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 框里的每个 FF（D 触发器）</span></div>
+
+<!-- ================= L2 触发器 ================= -->
+<section class="layer l2" id="l2">
+  <div class="lh"><span class="badge">L2</span>
+    <div><h2>锁存器 Latch 与触发器 Flip-Flop —— 带反馈的门电路</h2><div class="sub">SR 锁存器 → D 锁存器 → 主从 D 触发器（边沿触发）</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:10px">
+    <button class="btn tab active" data-t="sr">① SR 锁存器</button>
+    <button class="btn tab" data-t="dl">② D 锁存器</button>
+    <button class="btn tab" data-t="dff">③ 主从 D 触发器</button>
+  </div>
+
+  <!-- ① SR -->
+  <div id="l2-sr">
+    <div class="svgwrap">
+    <svg viewBox="0 0 920 430">
+      <defs><g id="norG"><path class="gate" d="M0,-24 L0,24 C14,24 30,16 44,0 C30,-16 14,-24 0,-24 Z"/><circle class="bub" cx="49" cy="0" r="5"/><text class="gtt" x="18" y="5">NOR</text></g></defs>
+      <use href="#norG" x="470" y="120"/>
+      <use href="#norG" x="470" y="310"/>
+      <path id="sr-r" class="wire" d="M200,108 H412 A8,8 0 0 1 428,108 H470"/>
+      <path id="sr-s" class="wire" d="M200,298 H470"/>
+      <path id="sr-fb1" class="wire" d="M608,120 H660 V380 H450 V322 H470"/>
+      <path id="sr-fb2" class="wire" d="M560,310 V128 A8,8 0 0 0 560,112 V60 H420 V132 H470"/>
+      <path id="sr-q" class="wire" d="M524,120 H608"/>
+      <path id="sr-qb" class="wire" d="M524,310 H608"/>
+      <circle class="dotn" cx="560" cy="310" r="3.5"/>
+      <circle class="lamp" id="sr-lq" cx="620" cy="120" r="12"/>
+      <circle class="lamp" id="sr-lqb" cx="620" cy="310" r="12"/>
+      <text class="lb" x="620" y="100" text-anchor="middle">Q</text>
+      <text class="lb" x="620" y="342" text-anchor="middle">Q̅</text>
+      <text class="lbs" x="200" y="96">R（复位 Reset）</text>
+      <text class="lbs" x="200" y="286">S（置位 Set）</text>
+      <text class="lbs" x="672" y="392" fill="#a78bfa">两条反馈线 = 记忆的来源</text>
+      <text id="sr-msg" class="lbs" x="460" y="416" text-anchor="middle">两个 NOR 交叉耦合：互相"喂"对方的输出 —— 一旦置位，自己养活自己 = 记住 1 位</text>
+    </svg>
+    </div>
+    <div class="panel">
+      <div class="grp"><span class="ctl-l">R 复位</span><label class="sw"><input type="checkbox" id="sr-rin"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">S 置位</span><label class="sw"><input type="checkbox" id="sr-sin"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">Q =</span><span class="read" id="sr-qv">0</span><span class="ctl-l">Q̅ =</span><span class="read" id="sr-qbv">1</span></div>
+      <div class="hint">拨 S=1 → Q 灯亮；把 S 拨回 0 → Q 依然亮（保持！）。试试 S、R 同时 =1 → 禁止态 ⚠。</div>
+    </div>
+  </div>
+
+  <!-- ② D锁存器 -->
+  <div id="l2-dl" style="display:none">
+    <div class="svgwrap">
+    <svg viewBox="0 0 920 320">
+      <defs><g id="andG"><path class="gate" d="M0,-24 H20 A24,24 0 0 1 20,24 H0 Z"/><text class="gtt" x="12" y="5">AND</text></g>
+      <g id="notG"><path class="gate" d="M0,-22 L44,0 L0,22 Z"/><circle class="bub" cx="49" cy="0" r="5"/></g></defs>
+      <use href="#notG" x="230" y="120"/>
+      <use href="#andG" x="330" y="80"/>
+      <use href="#andG" x="330" y="220"/>
+      <use href="#norG" x="560" y="92"/>
+      <use href="#norG" x="560" y="232"/>
+      <path id="dl-d" class="wire" d="M170,120 H230" marker-end="url(#arr)"/>
+      <path id="dl-dbr" class="wire" d="M185,120 V100 A8,8 0 0 1 185,84 V68 H330"/>
+      <path id="dl-db" class="wire" d="M284,120 H310 V208 H330"/>
+      <path id="dl-en" class="wire" d="M150,92 H330"/>
+      <path id="dl-enbr" class="wire" d="M240,92 V232 H330"/>
+      <path id="dl-s1" class="wire" d="M374,80 H500 V220 H560"/>
+      <path id="dl-r1" class="wire" d="M374,220 H460 V84 H492 A8,8 0 0 1 508,84 H532 A8,8 0 0 1 548,84 H560"/>
+      <path id="dl-fb1" class="wire" d="M660,92 H680 V244 H560"/>
+      <path id="dl-fb2" class="wire" d="M614,232 H640 V100 A8,8 0 0 1 640,84 V60 H540 V110 H560"/>
+      <path id="dl-q" class="wire" d="M614,92 H708"/>
+      <path id="dl-qb" class="wire" d="M614,232 H672 A8,8 0 0 1 688,232 H708"/>
+      <circle class="dotn" cx="185" cy="120" r="3.5"/><circle class="dotn" cx="240" cy="92" r="3.5"/>
+      <circle class="dotn" cx="640" cy="232" r="3.5"/><circle class="dotn" cx="660" cy="92" r="3.5"/>
+      <circle class="lamp" id="dl-lq" cx="720" cy="92" r="12"/>
+      <circle class="lamp" id="dl-lqb" cx="720" cy="232" r="12"/>
+      <text class="lb" x="720" y="72" text-anchor="middle">Q</text>
+      <text class="lb" x="720" y="264" text-anchor="middle">Q̅</text>
+      <text class="lbs" x="170" y="108">D（数据）</text>
+      <text class="lbs" x="140" y="80">EN（使能）</text>
+      <text class="lbs" x="296" y="60">D̅</text>
+      <text id="dl-msg" class="lbs" x="460" y="304" text-anchor="middle">EN=1：Q 实时跟随 D（"透明"）；EN=0：瞬间冻结</text>
+    </svg>
+    </div>
+    <div class="panel">
+      <div class="grp"><span class="ctl-l">D 数据</span><label class="sw"><input type="checkbox" id="dl-din"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">EN 使能</span><label class="sw"><input type="checkbox" id="dl-enin" checked><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">Q =</span><span class="read" id="dl-qv">0</span></div>
+      <div class="hint">EN=1 时拨 D：金色流动线一路通到 Q 灯（实时跟随）。把 EN 拨 0：再拨 D，所有路全灰 —— 冻结！</div>
+    </div>
+  </div>
+
+  <!-- ③ D触发器 -->
+  <div id="l2-dff" style="display:none">
+    <div class="svgwrap">
+    <svg viewBox="0 0 920 400">
+      <rect id="dff-mblk" class="subblk" x="280" y="100" width="150" height="90" rx="8"/>
+      <rect id="dff-sblk" class="subblk" x="580" y="100" width="150" height="90" rx="8"/>
+      <text class="lb" x="355" y="122" text-anchor="middle">主锁存器 Master</text>
+      <text id="dff-mst" class="lbs" x="355" y="172" text-anchor="middle" fill="#fbbf24">跟随 D…</text>
+      <text class="lb" x="655" y="122" text-anchor="middle">从锁存器 Slave</text>
+      <text id="dff-sst" class="lbs" x="655" y="172" text-anchor="middle">已锁存</text>
+      <text class="lbs" x="292" y="136">D</text>
+      <text class="lbs" x="312" y="184">C</text>
+      <text class="lbs" x="716" y="136" text-anchor="end">Q</text>
+      <text class="lbs" x="716" y="170" text-anchor="end">Q̅</text>
+      <text class="lbs" x="654" y="184">C̅</text>
+      <path id="dff-dsw" class="wire" d="M100,130 H120"/>
+      <path id="dff-dline" class="wire" d="M120,130 H280" marker-end="url(#arr)"/>
+      <path id="dff-m" class="wire" d="M430,130 H580" marker-end="url(#arr)"/>
+      <path id="dff-q" class="wire" d="M730,130 H788"/>
+      <path id="dff-fbw" class="wire" d="M730,165 H770 V330 H120 V130"/>
+      <circle class="dotn" cx="120" cy="130" r="3.5"/>
+      <circle class="lamp" id="dff-lq" cx="800" cy="130" r="12"/>
+      <text class="lb" x="800" y="164" text-anchor="middle">Q</text>
+      <text class="lbs" x="505" y="118" text-anchor="middle">M（中间节点）</text>
+      <path id="dff-clk" class="wire" d="M150,300 H424"/>
+      <path id="dff-clkbr" class="wire" d="M300,300 V190"/>
+      <path id="dff-clkb" class="wire" d="M478,300 H640 V190"/>
+      <use href="#notG" x="424" y="300"/>
+      <text class="lbs" x="118" y="288">CLK 时钟</text>
+      <text class="lbs" x="486" y="288">CLK̅（反相）</text>
+      <text id="dff-msg" class="lbs" x="460" y="376" text-anchor="middle">输出只在 CLK 上升沿那一瞬更新 —— 边沿触发，彻底告别"透明"</text>
+    </svg>
+    </div>
+    <div class="panel">
+      <div class="grp"><span class="ctl-l">D 输入</span><label class="sw"><input type="checkbox" id="dl2-din"><span class="kn"></span></label></div>
+      <div class="grp"><button class="btn" id="dff-clkbtn">⏰ 按下 CLK（0→1 上升沿）</button>
+        <label class="sw"><input type="checkbox" id="dl2-auto"><span class="kn"></span></label><span class="ctl-l">自动时钟</span></div>
+      <div class="grp"><span class="ctl-l">反馈 D←Q̅</span><label class="sw"><input type="checkbox" id="dl2-fb"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">M =</span><span class="read" id="dff-mv">0</span><span class="ctl-l">Q =</span><span class="read" id="dff-qv">0</span><span class="ctl-l">CLK =</span><span class="read" id="dff-ck">0</span></div>
+      <div class="hint" id="dff-hint">玩法：拨 D=1 → Q 不动 → 按 CLK → Q 才变 1。CLK=1 期间再拨 D，Q 也不会变 —— 边沿触发的意义。</div>
+    </div>
+  </div>
+
+  <ul class="pts">
+    <li><b>SR 锁存器</b>：两个 NOR 交叉反馈 → 最小的"记忆"；<b>D 锁存器</b>：加 EN 门控，但 EN=1 期间"透明"</li>
+    <li><b>主从 D 触发器</b>：主锁存器 CLK=0 时跟随、从锁存器 CLK=1 时输出 → 只在上升沿采样一次</li>
+    <li>接上 D←Q̅ 反馈 + 自动时钟 = Q 频率减半（二分频）—— 计数器/分频器的原理</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 触发器里的 NOR / AND 门</span></div>
+
+<!-- ================= L3 逻辑门 ================= -->
+<section class="layer l3" id="l3">
+  <div class="lh"><span class="badge">L3</span>
+    <div><h2>CMOS 逻辑门 —— PMOS 上拉 + NMOS 下拉</h2><div class="sub">NOT / NAND / NOR · 拨输入看导通路径和电流方向</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:10px">
+    <button class="btn tab active" data-g="not">NOT 非门（2 管）</button>
+    <button class="btn tab" data-g="nand">NAND 与非门（4 管）</button>
+    <button class="btn tab" data-g="nor">NOR 或非门（4 管）</button>
+  </div>
+
+  <div id="l3-not">
+    <div class="svgwrap">
+    <svg viewBox="0 0 920 400">
+      <g id="fetN-defs" style="display:none"><g id="fetN" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"><line x1="0" y1="0" x2="14" y2="0"/><line x1="14" y1="-18" x2="14" y2="18"/><line x1="22" y1="-24" x2="22" y2="-10"/><line x1="22" y1="-4" x2="22" y2="4"/><line x1="22" y1="10" x2="22" y2="24"/><line x1="22" y1="-24" x2="22" y2="-40"/><line x1="22" y1="24" x2="22" y2="40"/></g></g>
+      <path id="nt-vdd" class="wire v" d="M240,40 H404"/><text class="lb" x="236" y="30" fill="#f87171">VDD</text>
+      <path id="nt-ptop" class="wire" d="M322,40 V80"/>
+      <g id="nt-pm"><use href="#fetN" x="300" y="120" stroke="#fb923c"/></g>
+      <path id="nt-pbot" class="wire" d="M322,160 V180"/>
+      <path id="nt-ntop" class="wire" d="M322,180 V200"/>
+      <g id="nt-nm"><use href="#fetN" x="300" y="240"/></g>
+      <path id="nt-nbot" class="wire" d="M322,280 V300 M306,300 H338 M314,308 H330 M321,316 H323"/>
+      <path id="nt-out" class="wire" d="M322,180 H608"/>
+      <circle class="dotn" cx="322" cy="180" r="4.5"/>
+      <circle class="lamp" id="nt-lamp" cx="620" cy="180" r="12"/>
+      <text class="lb" x="620" y="214" text-anchor="middle">Y = A̅</text>
+      <path id="nt-amain" class="wire" d="M120,180 H160" marker-end="url(#arr)"/>
+      <path id="nt-aup" class="wire" d="M160,180 V120 H300"/>
+      <path id="nt-adn" class="wire" d="M160,180 V240 H300"/>
+      <circle class="dotn" cx="160" cy="180" r="3.5"/>
+      <text class="lbs" x="104" y="184" text-anchor="end">A 输入</text>
+      <text class="lbs" x="342" y="96" fill="#fb923c">PMOS（上拉）</text>
+      <text class="lbs" x="342" y="236" fill="#4ade80">NMOS（下拉）</text>
+      <text id="nt-msg" class="lbs" x="460" y="360" text-anchor="middle">A=0：PMOS 导通 → Y 接 VDD（=1）；A=1：NMOS 导通 → Y 接 GND（=0）</text>
+    </svg>
+    </div>
+    <div class="panel">
+      <div class="grp"><span class="ctl-l">A 输入</span><label class="sw"><input type="checkbox" id="nt-ain"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">Y =</span><span class="read" id="nt-yv">1</span></div>
+      <div class="hint">拨动 A：金色流动线 = 导通路径（注意流动方向：上拉流向灯泡 / 下拉从灯泡流向地），暗灰 = 截断。</div>
+    </div>
+  </div>
+
+  <div id="l3-nand" style="display:none">
+    <div class="svgwrap">
+    <svg viewBox="0 0 920 440">
+      <path id="na-vdd" class="wire v" d="M200,40 H380"/><text class="lb" x="196" y="30" fill="#f87171">VDD</text>
+      <path id="na-ptopa" class="wire" d="M242,40 V70"/>
+      <g id="na-gpa"><use href="#fetN" x="220" y="110" stroke="#fb923c"/></g>
+      <path id="na-pbota" class="wire" d="M242,150 V180"/>
+      <path id="na-ptopb" class="wire" d="M362,40 V70"/>
+      <g id="na-gpb"><use href="#fetN" x="340" y="110" stroke="#fb923c"/></g>
+      <path id="na-pbotb" class="wire" d="M362,150 V180"/>
+      <path id="na-out" class="wire" d="M242,180 H608"/>
+      <circle class="dotn" cx="242" cy="40" r="3.5"/><circle class="dotn" cx="362" cy="40" r="3.5"/>
+      <circle class="dotn" cx="362" cy="180" r="4"/>
+      <path id="na-ntop" class="wire" d="M362,180 V200"/>
+      <g id="na-gnb"><use href="#fetN" x="340" y="240"/></g>
+      <path id="na-mid" class="wire" d="M362,280 V300"/>
+      <g id="na-gna"><use href="#fetN" x="340" y="340"/></g>
+      <path id="na-ngnd" class="wire" d="M362,380 V400 M344,400 H380 M352,408 H372 M359,416 H365"/>
+      <circle class="lamp" id="na-lamp" cx="620" cy="180" r="12"/>
+      <text class="lb" x="620" y="214" text-anchor="middle">Y = (A·B)̅</text>
+      <path id="na-amain" class="wire" d="M120,110 H172 A8,8 0 0 1 188,110 H220" marker-end="url(#arr)"/>
+      <path id="na-adn" class="wire" d="M160,110 V162 A8,8 0 0 1 160,178 V340 H340"/>
+      <circle class="dotn" cx="160" cy="110" r="3.5"/>
+      <path id="na-bmain" class="wire" d="M120,170 H180" marker-end="url(#arr)"/>
+      <path id="na-bup" class="wire" d="M180,170 V85 H310 V110 H340"/>
+      <path id="na-bdn" class="wire" d="M180,170 V240 H340"/>
+      <circle class="dotn" cx="180" cy="170" r="3.5"/>
+      <text class="lbs" x="104" y="114" text-anchor="end">A</text>
+      <text class="lbs" x="104" y="174" text-anchor="end">B</text>
+      <text class="lbs" x="264" y="66" fill="#fb923c">PA</text><text class="lbs" x="384" y="66" fill="#fb923c">PB</text>
+      <text class="lbs" x="384" y="246" fill="#4ade80">NB</text><text class="lbs" x="384" y="346" fill="#4ade80">NA</text>
+      <text id="na-msg" class="lbs" x="460" y="352" text-anchor="middle">PMOS 并联（任一输入 0 → Y=1）；NMOS 串联（A=B=1 才把 Y 拉到 0）</text>
+    </svg>
+    </div>
+    <div class="panel">
+      <div class="grp"><span class="ctl-l">A</span><label class="sw"><input type="checkbox" id="na-ain"><span class="kn"></span></label>
+        <span class="ctl-l">B</span><label class="sw"><input type="checkbox" id="na-bin"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">Y =</span><span class="read" id="na-yv">1</span></div>
+      <div class="hint">把 A、B 都拨到 1：上拉全断、绿色串联链导通 → 电流从 Y 沿链条流向地，Y 才变 0。</div>
+    </div>
+  </div>
+
+  <div id="l3-nor" style="display:none">
+    <div class="svgwrap">
+    <svg viewBox="0 0 920 470">
+      <path id="no-vdd" class="wire v" d="M200,40 H284"/><text class="lb" x="196" y="30" fill="#f87171">VDD</text>
+      <path id="no-ptop" class="wire" d="M242,40 V70"/>
+      <g id="no-gpa"><use href="#fetN" x="220" y="110" stroke="#fb923c"/></g>
+      <path id="no-mid" class="wire" d="M242,150 V170"/>
+      <g id="no-gpb"><use href="#fetN" x="220" y="210" stroke="#fb923c"/></g>
+      <path id="no-out" class="wire" d="M242,250 H608"/>
+      <circle class="dotn" cx="242" cy="40" r="3.5"/><circle class="dotn" cx="482" cy="250" r="4"/><circle class="dotn" cx="382" cy="250" r="4"/>
+      <path id="no-ntopa" class="wire" d="M382,250 V260"/>
+      <g id="no-gna"><use href="#fetN" x="360" y="300"/></g>
+      <path id="no-ntopb" class="wire" d="M482,250 V320"/>
+      <g id="no-gnb"><use href="#fetN" x="460" y="360"/></g>
+      <path id="no-nagnd" class="wire" d="M382,340 V400"/>
+      <path id="no-gbus" class="wire" d="M382,400 H482 M432,400 V410 M416,410 H448 M424,418 H440"/>
+      <circle class="dotn" cx="382" cy="400" r="3.5"/><circle class="dotn" cx="482" cy="400" r="3.5"/>
+      <circle class="lamp" id="no-lamp" cx="620" cy="250" r="12"/>
+      <text class="lb" x="620" y="284" text-anchor="middle">Y = (A+B)̅</text>
+      <path id="no-amain" class="wire" d="M120,110 H220" marker-end="url(#arr)"/>
+      <path id="no-adn" class="wire" d="M160,110 V182 A8,8 0 0 1 160,198 V300 H360"/>
+      <circle class="dotn" cx="160" cy="110" r="3.5"/>
+      <path id="no-bmain" class="wire" d="M120,190 H180" marker-end="url(#arr)"/>
+      <path id="no-bup" class="wire" d="M180,190 V210 H220"/>
+      <path id="no-bdn" class="wire" d="M180,190 V292 A8,8 0 0 1 180,308 V360 H374 A8,8 0 0 1 390,360 H460"/>
+      <circle class="dotn" cx="180" cy="190" r="3.5"/>
+      <text class="lbs" x="104" y="114" text-anchor="end">A</text>
+      <text class="lbs" x="104" y="194" text-anchor="end">B</text>
+      <text class="lbs" x="264" y="66" fill="#fb923c">PA</text><text class="lbs" x="264" y="186" fill="#fb923c">PB</text>
+      <text class="lbs" x="404" y="296" fill="#4ade80">NA</text><text class="lbs" x="504" y="356" fill="#4ade80">NB</text>
+      <text id="no-msg" class="lbs" x="460" y="452" text-anchor="middle">PMOS 串联（A=B=0 才导通 → Y=1）；NMOS 并联（任一输入 1 → Y=0）· 小弧线 = 跨线不相连</text>
+    </svg>
+    </div>
+    <div class="panel">
+      <div class="grp"><span class="ctl-l">A</span><label class="sw"><input type="checkbox" id="no-ain"><span class="kn"></span></label>
+        <span class="ctl-l">B</span><label class="sw"><input type="checkbox" id="no-bin"><span class="kn"></span></label></div>
+      <div class="grp"><span class="ctl-l">Y =</span><span class="read" id="no-yv">1</span></div>
+      <div class="hint">NOR 和 NAND 刚好"对偶"：串 ↔ 并、PMOS ↔ NMOS 互换。对比着拨一遍就懂。</div>
+    </div>
+  </div>
+
+  <ul class="pts">
+    <li><b>上拉网络（PMOS）</b>负责输出 1，<b>下拉网络（NMOS）</b>负责输出 0，两者互斥、静态零功耗</li>
+    <li>NAND = PMOS 并联 + NMOS 串联；NOR 恰好对偶</li>
+    <li>与门 = NAND+NOT、或门 = NOR+NOT：所有逻辑都能由这几个门搭出</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 门里的每个 MOSFET</span></div>
+
+<!-- ================= L4 MOSFET ================= -->
+<section class="layer l4" id="l4">
+  <div class="lh"><span class="badge">L4</span>
+    <div><h2>MOSFET 场效应晶体管 —— 电压控制的开关</h2><div class="sub">栅 G / 漏 D / 源 S · 阈值电压 V<sub>TH</sub> · 左：剖面结构，右：接成开关电路</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 470">
+    <text class="lb" x="250" y="34" text-anchor="middle" id="l4-title">NMOS 剖面：N⁺ 源漏 + P 衬底</text>
+    <g id="l4-n">
+      <rect x="70" y="250" width="360" height="150" fill="#3d3550"/><text class="lbs" x="250" y="392" text-anchor="middle" fill="#b9a8e0">P 型衬底（Body）</text>
+      <rect x="90" y="218" width="90" height="44" fill="#8a3d3d"/><text class="lbs" x="135" y="244" text-anchor="middle" fill="#ffd9d9">N⁺ 源 S</text>
+      <rect x="320" y="218" width="90" height="44" fill="#8a3d3d"/><text class="lbs" x="365" y="244" text-anchor="middle" fill="#ffd9d9">N⁺ 漏 D</text>
+    </g>
+    <g id="l4-p" style="display:none">
+      <rect x="70" y="250" width="360" height="150" fill="#2d3a55"/><text class="lbs" x="250" y="392" text-anchor="middle" fill="#a8c0e0">N 型衬底（Body）</text>
+      <rect x="90" y="218" width="90" height="44" fill="#7a4a5a"/><text class="lbs" x="135" y="244" text-anchor="middle" fill="#ffe1ec">P⁺ 源 S</text>
+      <rect x="320" y="218" width="90" height="44" fill="#7a4a5a"/><text class="lbs" x="365" y="244" text-anchor="middle" fill="#ffe1ec">P⁺ 漏 D</text>
+    </g>
+    <rect x="196" y="206" width="88" height="12" fill="#d4a017"/>
+    <rect x="190" y="178" width="100" height="28" fill="#94a3b8"/>
+    <rect id="l4-ch" class="pch" x="190" y="218" width="120" height="12"/>
+    <path d="M240,178 V150" stroke="#94a3b8" stroke-width="3"/>
+    <text class="lb" x="240" y="140" text-anchor="middle" fill="#22d3ee">栅 G</text>
+    <text class="lbs" x="330" y="200" fill="#fde68a">栅氧化层</text>
+    <path d="M135,218 V196 H170 M365,218 V196 H300" stroke="#64748b" stroke-width="1.6" fill="none"/>
+    <text class="lbs" x="250" y="282" text-anchor="middle" id="l4-chtxt" fill="#8fa3bf">（未形成沟道）</text>
+    <g id="l4-elec" opacity="0">
+      <circle r="4.5" fill="#fbbf24"><animateMotion dur="1.6s" repeatCount="indefinite" path="M110,224 H330"/></circle>
+      <circle r="4.5" fill="#fbbf24"><animateMotion dur="1.6s" begin="0.5s" repeatCount="indefinite" path="M110,224 H330"/></circle>
+      <circle r="4.5" fill="#fbbf24"><animateMotion dur="1.6s" begin="1s" repeatCount="indefinite" path="M110,224 H330"/></circle>
+    </g>
+    <text class="lbs" x="250" y="440" text-anchor="middle" id="l4-smsg">V_G = 0 &lt; V_TH → 沟道未形成 → S–D 截止（开关断开）</text>
+    <!-- 右：开关电路 -->
+    <text class="lb" x="622" y="34" text-anchor="middle" id="l4-stitle">NMOS 接成开关</text>
+    <path class="wire v" d="M560,60 H684"/><text class="lb" x="556" y="50" fill="#f87171">VDD</text>
+    <path id="l4-vtop" class="wire g" d="M622,60 V138"/>
+    <circle class="lamp" id="l4-lamp" cx="622" cy="150" r="12"/>
+    <path id="l4-vbot" class="wire g" d="M622,162 V180"/>
+    <g id="l4-sym"><use href="#fetN" x="600" y="220"/></g>
+    <path id="l4-bline" class="wire g" d="M622,260 V300 M606,300 H638 M614,308 H630 M621,316 H623"/>
+    <path id="l4-gw" class="wire" d="M480,220 H600" marker-end="url(#arr)"/>
+    <text class="lbs" x="476" y="208" text-anchor="end">V_G 栅压 →</text>
+    <text class="lbs" x="640" y="184" id="l4-slab">D（漏）</text>
+    <text class="lbs" x="640" y="266" id="l4-dlab">S（源）</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><button class="btn tab active" id="l4-bn">NMOS（N 沟道）</button><button class="btn tab" id="l4-bp">PMOS（P 沟道）</button></div>
+    <div class="grp"><span class="ctl-l">栅极电压 V_G</span><label class="sw"><input type="checkbox" id="l4-vg"><span class="kn"></span></label><span class="read" id="l4-vgv">0 V（低）</span></div>
+    <div class="hint" id="l4-hint">拨高 V_G：剖面图里绿色沟道"长"出来，电子从源流到漏（金点动画），右边灯亮 —— 一个晶体管就是一个受电压控制的开关。</div>
+  </div>
+  <ul class="pts">
+    <li><b>NMOS</b>：V_G 高于阈值 → 导通；<b>PMOS</b> 对偶：V_G 低才导通（符号加气泡 = 取反）</li>
+    <li>栅极隔着氧化层<b>只靠电场</b>控制沟道，几乎不耗电流 → CMOS 静态功耗≈0</li>
+    <li>PMOS 放上、NMOS 放下共用栅极 = 上一层的 CMOS 门</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 源、漏、沟道到底是什么材料</span></div>
+
+<!-- ================= L5 掺杂硅 ================= -->
+<section class="layer l5" id="l5">
+  <div class="lh"><span class="badge">L5</span>
+    <div><h2>半导体掺杂 Silicon Doping —— 一切的最底层</h2><div class="sub">本征（纯）硅 / N 型（掺磷）/ P 型（掺硼）</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 440">
+    <g id="l5-lat"></g>
+    <text class="lbs" x="120" y="424">晶格：每个原子与邻居共享电子对（共价键）· 点下方按钮改变中央掺杂原子</text>
+    <rect class="chip" x="620" y="120" width="270" height="180" rx="10"/>
+    <text class="lbs" x="755" y="150" text-anchor="middle">当前状态</text>
+    <text id="l5-t1" class="tth" x="755" y="186" font-size="15">本征硅 Intrinsic</text>
+    <text id="l5-t2" class="ttd" x="755" y="216">无自由载流子</text>
+    <circle id="l5-lamp" class="lamp" cx="700" cy="258" r="13"/>
+    <text class="lbs" x="726" y="263">导电性</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp">
+      <button class="btn tab active" id="l5-bsi">本征硅（纯 Si）</button>
+      <button class="btn tab" id="l5-bn">掺磷 P → N 型</button>
+      <button class="btn tab" id="l5-bp">掺硼 B → P 型</button>
+    </div>
+    <div class="hint" id="l5-hint">纯硅几乎不导电。掺一个磷原子 → 多出一个到处乱跑的自由电子；掺一个硼原子 → 留下一个会"移动"的空穴。</div>
+  </div>
+  <ul class="pts">
+    <li><b>N 型</b>（负）：多子是电子 → 做 NMOS 的源/漏；<b>P 型</b>（正）：多子是空穴 → 做 PMOS 的源/漏</li>
+    <li>NMOS = P 衬底 + N⁺ 源漏；PMOS 全反过来 —— 上层晶体管的材料来源</li>
+    <li>现代 CPU：指甲盖大的硅片上，数百亿个这样的开关协同工作</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  寄存器 ← 触发器 ← 逻辑门 ← MOSFET ← 掺杂硅：<b>五层通用原理</b>，拨一遍开关就懂了。
+</footer>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const H=(el,b)=>{if(el)el.classList.toggle('h',!!b)};
+
+/* ============ L5 掺杂硅 ============ */
+(function(){
+  const NS='http://www.w3.org/2000/svg', g=$('l5-lat');
+  const el=(t,a)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);return n;};
+  const xs=[150,280,410,540], ys=[150,265,380], IX=1, IY=1;
+  ys.forEach(y=>xs.forEach((x,i)=>{if(i<3)g.appendChild(el('line',{x1:x,y1:y,x2:xs[i+1],y2:y,class:'bond'}));}));
+  xs.forEach(x=>ys.forEach((y,i)=>{if(i<2)g.appendChild(el('line',{x1:x,y1:y,x2:x,y2:ys[i+1],class:'bond'}));}));
+  const atoms=[];
+  xs.forEach((x,ix)=>ys.forEach((y,iy)=>{
+    const c=el('circle',{cx:x,cy:y,r:22,class:'atom'}); g.appendChild(c);
+    const t=el('text',{x:x,y:y+4,class:'at'}); t.textContent='Si'; g.appendChild(t);
+    atoms.push({c,t,ix,iy});
+  }));
+  const imp=atoms.find(a=>a.ix===IX&&a.iy===IY);
+  const eG=el('g',{opacity:0}), hG=el('g',{opacity:0});
+  const eC=el('circle',{cx:xs[IX]+36,cy:ys[IY]-6,r:7,fill:'#fbbf24',class:'drift'});
+  const eT=el('text',{x:xs[IX]+76,y:ys[IY]-36,class:'at',fill:'#fbbf24'}); eT.textContent='自由电子 e⁻ →';
+  const hC=el('circle',{cx:xs[IX],cy:ys[IY]+30,r:9,fill:'none',stroke:'#fbbf24','stroke-dasharray':'4 4','stroke-width':2.4,class:'drift'});
+  const hT=el('text',{x:xs[IX]+40,y:ys[IY]+62,class:'at',fill:'#fbbf24'}); hT.textContent='空穴 h⁺ →';
+  eG.appendChild(eC);eG.appendChild(eT);hG.appendChild(hC);hG.appendChild(hT);
+  g.appendChild(eG);g.appendChild(hG);
+  function set(d){
+    ['l5-bsi','l5-bn','l5-bp'].forEach((id,i)=>$(id).classList.toggle('active',['si','n','p'][i]===d));
+    imp.c.setAttribute('fill', d==='n'?'#7f1d1d': d==='p'?'#1e40af':'#2b3648');
+    imp.c.setAttribute('class','atom'+(d!=='si'?' imp':''));
+    imp.c.setAttribute('stroke', d==='n'?'#f87171': d==='p'?'#60a5fa':'#5b6b82');
+    imp.t.textContent = d==='n'?'P': d==='p'?'B':'Si';
+    eG.setAttribute('opacity', d==='n'?1:0);
+    hG.setAttribute('opacity', d==='p'?1:0);
+    $('l5-lamp').classList.toggle('on', d!=='si');
+    $('l5-t1').textContent = d==='si'?'本征硅 Intrinsic': d==='n'?'N 型半导体':'P 型半导体';
+    $('l5-t2').textContent = d==='si'?'无自由载流子，几乎不导电': d==='n'?'磷 P 多 1 个电子 → 电子导电':'硼 B 缺 1 个电子 → 空穴导电';
+    $('l5-hint').textContent = d==='si'?'纯硅几乎不导电：所有价电子都被共价键锁住。'
+      : d==='n'?'磷是 5 价，4 个键用掉后剩 1 个自由电子 —— 载流子是负电荷，所以叫 N（Negative）型。'
+      :'硼是 3 价，缺 1 个电子形成"空穴"，邻近电子跳过来填补，空穴就像在反向移动 —— P（Positive）型。';
+  }
+  $('l5-bsi').onclick=()=>set('si');$('l5-bn').onclick=()=>set('n');$('l5-bp').onclick=()=>set('p');
+  set('si');
+})();
+
+/* ============ L4 MOSFET ============ */
+(function(){
+  const st={mode:'n',vg:0};
+  function render(){
+    const n=st.mode==='n', on=n?st.vg===1:st.vg===0;
+    $('l4-n').style.display=n?'':'none'; $('l4-p').style.display=n?'none':'';
+    $('l4-bn').classList.toggle('active',n); $('l4-bp').classList.toggle('active',!n);
+    $('l4-sym').innerHTML=`<use href="#fetN" x="600" y="220"${n?'':' stroke="#fb923c"'}/>`;
+    $('l4-ch').classList.toggle('on',on);
+    $('l4-elec').setAttribute('opacity',on?1:0);
+    $('l4-lamp').classList.toggle('on',on);
+    H($('l4-gw'),on); H($('l4-vtop'),on); H($('l4-vbot'),on); H($('l4-bline'),on);
+    $('l4-title').textContent = n?'NMOS 剖面：N⁺ 源漏 + P 衬底':'PMOS 剖面：P⁺ 源漏 + N 衬底';
+    $('l4-stitle').textContent = n?'NMOS 接成开关':'PMOS 接成开关（低电平有效）';
+    $('l4-slab').textContent = n?'D（漏）':'S（源）';
+    $('l4-dlab').textContent = n?'S（源）':'D（漏）';
+    $('l4-chtxt').textContent = on?(n?'（反型层 N 沟道已形成）':'（反型层 P 沟道已形成）'):'（未形成沟道）';
+    $('l4-chtxt').setAttribute('fill',on?'#4ade80':'#8fa3bf');
+    $('l4-smsg').textContent = n
+      ? (on?'V_G = 5V > V_TH → 栅极电场吸引电子 → 沟道导通 → 开关闭合，灯亮':'V_G = 0 < V_TH → 沟道未形成 → S–D 截止（开关断开）')
+      : (on?'V_G = 0V（低）→ 空穴沟道形成 → S–D 导通（PMOS 低有效）':'V_G = 5V（高）→ 沟道消失 → S–D 截止');
+    $('l4-vgv').textContent = st.vg?'5 V（高）':'0 V（低）';
+    $('l4-hint').textContent = n
+      ?'拨高 V_G：栅极电场把电子吸到表面，"长"出一条 N 沟道（绿色），源漏打通，灯亮。再拨回 0，沟道消失。'
+      :'PMOS 低电平有效：V_G=0 时导通。CMOS 门正是 NMOS+PMOS 成对互补使用。';
+  }
+  $('l4-vg').onchange=e=>{st.vg=e.target.checked?1:0;render();};
+  $('l4-bn').onclick=()=>{st.mode='n';render();};
+  $('l4-bp').onclick=()=>{st.mode='p';render();};
+  render();
+})();
+
+/* ============ L3 逻辑门 ============ */
+(function(){
+  document.querySelectorAll('#l3 .tab[data-g]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#l3 .tab[data-g]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    ['not','nand','nor'].forEach(k=>$('l3-'+k).style.display = b.dataset.g===k?'':'none');
+  });
+  const st={a:0,b:0};
+  function rNOT(){
+    const A=st.a, Y=A?0:1;
+    H($('nt-amain'),A); H($('nt-aup'),A); H($('nt-adn'),A);
+    H($('nt-vdd'),!A); H($('nt-ptop'),!A); H($('nt-pbot'),!A);
+    H($('nt-ntop'),A); H($('nt-nbot'),A); H($('nt-out'),true);
+    $('nt-pm').style.opacity=A?0.3:1; $('nt-nm').style.opacity=A?1:0.3;
+    $('nt-lamp').classList.toggle('on',!!Y); $('nt-yv').textContent=Y;
+    $('nt-msg').textContent = A?'A=1：NMOS 导通 → 电流从 Y 流向 GND（输出 0）；PMOS 截止':'A=0：PMOS 导通 → 电流从 VDD 流向 Y（输出 1）；NMOS 截止';
+  }
+  function rNAND(){
+    const A=st.a,B=st.b, both=A&&B, Y=both?0:1;
+    H($('na-amain'),A); H($('na-adn'),A); H($('na-bmain'),B); H($('na-bup'),B); H($('na-bdn'),B);
+    H($('na-vdd'),!both); H($('na-ptopa'),!A); H($('na-pbota'),!A);
+    H($('na-ptopb'),!B); H($('na-pbotb'),!B);
+    H($('na-ntop'),both); H($('na-mid'),both); H($('na-ngnd'),both); H($('na-out'),true);
+    $('na-gpa').style.opacity=A?0.3:1; $('na-gpb').style.opacity=B?0.3:1;
+    $('na-gna').style.opacity=A?1:0.3; $('na-gnb').style.opacity=B?1:0.3;
+    $('na-lamp').classList.toggle('on',!!Y); $('na-yv').textContent=Y;
+    $('na-msg').textContent = both?'A=B=1：上拉全断，NMOS 串联链导通 → 电流从 Y 流向 GND，Y=0'
+      :'至少一个输入为 0：对应 PMOS 导通 → 电流从 VDD 流向 Y，Y=1（下拉链在某处断开）';
+  }
+  function rNOR(){
+    const A=st.a,B=st.b, none=!A&&!B, Y=none?1:0;
+    H($('no-amain'),A); H($('no-adn'),A); H($('no-bmain'),B); H($('no-bup'),B); H($('no-bdn'),B);
+    H($('no-vdd'),none); H($('no-ptop'),none); H($('no-mid'),none); H($('no-out'),true);
+    H($('no-ntopa'),A); H($('no-nagnd'),A); H($('no-ntopb'),B); H($('no-gbus'),A||B);
+    $('no-gpa').style.opacity=A?0.3:1; $('no-gpb').style.opacity=B?0.3:1;
+    $('no-gna').style.opacity=A?1:0.3; $('no-gnb').style.opacity=B?1:0.3;
+    $('no-lamp').classList.toggle('on',!!Y); $('no-yv').textContent=Y;
+    $('no-msg').textContent = none?'A=B=0：两个 PMOS 串联导通 → 电流从 VDD 流向 Y，Y=1；NMOS 全截止'
+      :(A&&B?'A=B=1：两条 NMOS 支路都导通 → Y=0':'任一输入为 1：对应 NMOS 导通 → 电流从 Y 流向 GND，Y=0');
+  }
+  const bind=(id,k)=>$(id).onchange=e=>{st[k]=e.target.checked?1:0;rNOT();rNAND();rNOR();};
+  bind('nt-ain','a');bind('na-ain','a');bind('na-bin','b');bind('no-ain','a');bind('no-bin','b');
+  rNOT();rNAND();rNOR();
+})();
+
+/* ============ L2 触发器 ============ */
+(function(){
+  document.querySelectorAll('#l2 .tab[data-t]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#l2 .tab[data-t]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    ['sr','dl','dff'].forEach(k=>$('l2-'+k).style.display=b.dataset.t===k?'':'none');
+  });
+  /* ① SR */
+  const sr={s:0,r:0,q:0};
+  function srRender(){
+    const forb=sr.s&&sr.r;
+    if(!forb){ if(sr.s)sr.q=1; else if(sr.r)sr.q=0; }
+    const q=forb?0:sr.q, qb=forb?0:(q?0:1);
+    H($('sr-r'),sr.r); H($('sr-s'),sr.s);
+    H($('sr-q'),q); H($('sr-qb'),qb); H($('sr-fb1'),q); H($('sr-fb2'),qb);
+    $('sr-lq').classList.toggle('on',!!q); $('sr-lqb').classList.toggle('on',!!qb);
+    $('sr-qv').textContent=forb?'✕':q; $('sr-qbv').textContent=forb?'✕':qb;
+    const m=$('sr-msg');
+    m.textContent = forb?'⚠ S=R=1：禁止态！两输出同时为 0，反馈失效 —— 实际电路要避免'
+      : sr.s?'S=1 → Q=1（置位），反馈线把它"焊"住了':'SR 锁存器：两个 NOR 交叉耦合，互相"喂"对方的输出 —— 一旦置位，自己养活自己 = 记住 1 位';
+    m.classList.toggle('warn',!!forb);
+  }
+  $('sr-sin').onchange=e=>{sr.s=e.target.checked?1:0;srRender();};
+  $('sr-rin').onchange=e=>{sr.r=e.target.checked?1:0;srRender();};
+  /* ② D 锁存器 */
+  const dl={d:0,en:1,q:0};
+  function dlRender(){
+    if(dl.en)dl.q=dl.d;
+    const qb=dl.q?0:1;
+    H($('dl-d'),dl.d); H($('dl-dbr'),dl.d);
+    H($('dl-db'),!dl.d);
+    H($('dl-en'),dl.en); H($('dl-enbr'),dl.en);
+    H($('dl-s1'),dl.d&&dl.en); H($('dl-r1'),!dl.d&&dl.en);
+    H($('dl-q'),dl.q); H($('dl-qb'),qb); H($('dl-fb1'),dl.q); H($('dl-fb2'),qb);
+    $('dl-lq').classList.toggle('on',!!dl.q); $('dl-lqb').classList.toggle('on',!!qb);
+    $('dl-qv').textContent=dl.q;
+    $('dl-msg').textContent = dl.en
+      ?'EN=1：窗口打开，金色流动线从 D 一路通到 Q（透明跟随）—— 拨 D 试试'
+      :'EN=0：窗口关闭，所有路径变灰，Q 已冻结 —— 现在拨 D 无效';
+  }
+  $('dl-din').onchange=e=>{dl.d=e.target.checked?1:0;dlRender();};
+  $('dl-enin').onchange=e=>{dl.en=e.target.checked?1:0;dlRender();};
+  /* ③ 主从 D 触发器 */
+  const df={d:0,clk:0,m:0,q:0,fb:0,auto:null};
+  const effD=()=>df.fb?(df.q?0:1):df.d;
+  function flash(){
+    ['dff-clk','dff-clkbr','dff-clkb'].forEach(k=>{const e=$(k);e.classList.add('clkfire');setTimeout(()=>e.classList.remove('clkfire'),1050);});
+  }
+  function dfRender(edge){
+    if(!df.clk) df.m=effD();
+    if(edge) df.q=df.m;
+    if(df.clk) df.q=df.m;
+    const qb=df.q?0:1;
+    $('dff-dsw').style.opacity=df.fb?0.25:1;
+    H($('dff-dsw'),!df.fb&&df.d); H($('dff-dline'),effD());
+    H($('dff-m'),df.m); H($('dff-q'),df.q);
+    H($('dff-fbw'),df.fb&&qb);
+    H($('dff-clk'),df.clk); H($('dff-clkb'),!df.clk);
+    $('dff-lq').classList.toggle('on',!!df.q);
+    $('dff-mv').textContent=df.m; $('dff-qv').textContent=df.q; $('dff-ck').textContent=df.clk;
+    $('dff-mblk').classList.toggle('act',!df.clk);
+    $('dff-sblk').classList.toggle('act',!!df.clk);
+    $('dff-mst').textContent = df.clk?'已锁存（冻结）':'跟随 D…';
+    $('dff-mst').setAttribute('fill',df.clk?'#8fa3bf':'#fbbf24');
+    $('dff-sst').textContent = df.clk?'输出 M → Q':'已锁存';
+    $('dff-sst').setAttribute('fill',df.clk?'#fbbf24':'#8fa3bf');
+    $('dff-clkbtn').textContent = df.clk?'⏰ 松开 CLK（1→0）':'⏰ 按下 CLK（0→1 上升沿）';
+    $('dl2-din').disabled=!!df.fb;
+    $('dff-hint').textContent = df.fb
+      ?'D←Q̅ 已接通：每个上升沿 Q 翻转一次 → 开自动时钟，Q 灯闪烁频率只有 CLK 的一半（二分频！计数器的原理）'
+      :'玩法：拨 D=1 → Q 不动 → 按 CLK → Q 才变 1。CLK=1 期间再拨 D，Q 也不会变 —— 边沿触发的意义。';
+  }
+  function clkToggle(){
+    flash();
+    const v=df.clk?0:1;
+    if(v){ dfRender(true); df.clk=1; dfRender(false); }
+    else { df.clk=0; dfRender(false); }
+  }
+  $('dff-clkbtn').onclick=clkToggle;
+  $('dl2-din').onchange=e=>{df.d=e.target.checked?1:0;dfRender(false);};
+  $('dl2-fb').onchange=e=>{df.fb=e.target.checked?1:0;dfRender(false);};
+  $('dl2-auto').onchange=e=>{
+    if(e.target.checked) df.auto=setInterval(clkToggle,650);
+    else clearInterval(df.auto);
+  };
+  dfRender(false); dlRender(); srRender();
+})();
+
+/* ============ L1 寄存器 ============ */
+(function(){
+  const NS='http://www.w3.org/2000/svg', g=$('l1-rows');
+  const el=(t,a,txt)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);if(txt!=null)n.textContent=txt;return n;};
+  const st={d:[0,0,0,0],q:[0,0,0,0],auto:null};
+  const rowY=[110,225,340,455];
+  const dWires=[],qWires=[],clkBr=[],lamps=[],qTxt=[];
+  rowY.forEach((y,i)=>{
+    const bit=3-i;
+    g.appendChild(el('text',{x:184,y:y-24,class:'lbs','text-anchor':'end',fill:'#fbbf24'},'D'+bit));
+    const dw=el('path',{d:`M190,${y-20} H320`,'class':'wire','marker-end':'url(#arr)'}); g.appendChild(dw); dWires.push(dw);
+    g.appendChild(el('use',{href:'#ffbox',x:320,y:y-42}));
+    g.appendChild(el('text',{x:380,y:y-52,class:'lbs','text-anchor':'middle'},'触发器 · 位 '+bit));
+    const qw=el('path',{d:`M440,${y-20} H588`,'class':'wire','marker-end':'url(#arr)'}); g.appendChild(qw); qWires.push(qw);
+    const lamp=el('circle',{cx:604,cy:y-20,r:12,class:'lamp'}); g.appendChild(lamp); lamps.push(lamp);
+    g.appendChild(el('text',{x:604,y:y+12,class:'lbs','text-anchor':'middle'},'Q'+bit));
+    const qt=el('text',{x:640,y:y-15,class:'lb'},'0'); g.appendChild(qt); qTxt.push(qt);
+    const br=el('path',{d:`M150,${y+17} H320`,'class':'wire'}); g.appendChild(br); clkBr.push(br);
+    g.appendChild(el('circle',{cx:150,cy:y+17,r:3.5,class:'dotn'}));
+  });
+  const binStr=a=>a[3]+''+a[2]+a[1]+a[0];
+  function render(fire){
+    st.d.forEach((v,i)=>H(dWires[3-i],!!v));
+    st.q.forEach((v,i)=>{ H(qWires[3-i],!!v); lamps[3-i].classList.toggle('on',!!v); qTxt[3-i].textContent=v; });
+    const db=binStr(st.d), qb=binStr(st.q);
+    $('l1-din').innerHTML=`${db} <b>(${parseInt(db,2)})</b>`;
+    $('l1-qout').innerHTML=`${qb} <b>(${parseInt(qb,2)})</b>`;
+    if(fire){
+      [$('l1-clkbus'),...clkBr].forEach(w=>{w.classList.add('clkfire');setTimeout(()=>w.classList.remove('clkfire'),1050);});
+    }
+  }
+  function syncSw(){[...$('l1-sw').querySelectorAll('input')].forEach(inp=>{inp.checked=!!st.d[+inp.dataset.b];});}
+  const wrap=$('l1-sw');
+  [3,2,1,0].forEach(b=>{
+    const sp=document.createElement('span'); sp.className='ctl-l'; sp.textContent='D'+b; wrap.appendChild(sp);
+    const lb=document.createElement('label'); lb.className='sw';
+    lb.innerHTML=`<input type="checkbox" data-b="${b}"><span class="kn"></span>`;
+    wrap.appendChild(lb);
+    lb.querySelector('input').onchange=e=>{
+      st.d[b]=e.target.checked?1:0;
+      $('l1-num').value=st.d[3]*8+st.d[2]*4+st.d[1]*2+st.d[0];
+      render(false);
+    };
+  });
+  $('l1-num').oninput=e=>{
+    let v=parseInt(e.target.value); if(isNaN(v))v=0; v=Math.max(0,Math.min(15,v));
+    st.d=[v&1,(v>>1)&1,(v>>2)&1,(v>>3)&1];
+    syncSw(); render(false);
+  };
+  $('l1-clkbtn').onclick=()=>{ st.q=st.d.slice(); render(true); };
+  $('l1-auto').onchange=e=>{
+    if(e.target.checked) st.auto=setInterval(()=>{st.q=st.d.slice();render(true);},900);
+    else clearInterval(st.auto);
+  };
+  render(false);
+})();
+
+/* nav 高亮 */
+(function(){
+  const links=[...document.querySelectorAll('nav a')];
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{ if(e.isIntersecting)
+      links.forEach(l=>l.classList.toggle('cur',l.getAttribute('href')==='#'+e.target.id)); });
+  },{rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('section.layer').forEach(s=>io.observe(s));
+})();
+</script>
+</body>
+</html>
