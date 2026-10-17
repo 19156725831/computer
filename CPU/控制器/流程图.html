@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CPU 控制器 · 可动手原理图</title>
+<style>
+:root{--bg:#0b0f1a;--card:#101726;--line:#22304a;--txt:#e2e8f0;--sub:#8fa3bf;
+--cyan:#22d3ee;--green:#4ade80;--red:#f87171;--orange:#fb923c;--gold:#fbbf24;--purple:#a78bfa;}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6}
+header{max-width:960px;margin:0 auto;padding:42px 20px 18px;text-align:center}
+header h1{font-size:27px}header p{color:var(--sub);margin-top:6px;font-size:13.5px}
+nav{position:sticky;top:0;z-index:9;background:rgba(11,15,26,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .in{max-width:960px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:9px 16px}
+nav a{color:var(--sub);text-decoration:none;font:600 13px ui-monospace,monospace;padding:5px 12px;border-radius:8px;white-space:nowrap}
+nav a.cur{color:#0b0f1a;background:var(--cyan)}
+main{max-width:960px;margin:0 auto;padding:22px 14px 40px}
+section.layer{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px;scroll-margin-top:64px}
+.lh{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.badge{flex:0 0 auto;font:800 13px ui-monospace,monospace;color:#0b0f1a;background:var(--cyan);border-radius:8px;padding:3px 10px}
+.l2b{background:var(--green)}.l3b{background:var(--gold)}.l4b{background:var(--orange)}.l5b{background:var(--purple)}
+.lh h2{font-size:18.5px}.lh .sub{color:var(--sub);font:500 11.5px ui-monospace,monospace}
+.svgwrap{margin:6px 0 2px;text-align:center}.svgwrap svg{width:100%;max-width:920px;height:auto}
+.panel{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;background:#0d1422;border:1px solid #1c2a44;border-radius:12px;padding:11px 14px;margin:6px 0 8px}
+.panel .grp{display:flex;gap:9px;align-items:center;padding-right:12px;border-right:1px dashed #26375a}
+.panel .grp:last-child{border-right:0}
+.ctl-l{font:600 12.5px ui-monospace,monospace;color:var(--sub)}
+.sw{position:relative;display:inline-block;width:50px;height:26px;cursor:pointer}
+.sw input{opacity:0;width:0;height:0}
+.sw .kn{position:absolute;inset:0;background:#1c2a44;border:1px solid #33486e;border-radius:26px;transition:.18s}
+.sw .kn::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#64748b;transition:.18s}
+.sw input:checked+.kn{background:#14432f;border-color:var(--green)}
+.sw input:checked+.kn::before{transform:translateX(24px);background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.7)}
+.btn{cursor:pointer;background:#16233c;color:var(--gold);border:1px solid #3a4d73;border-radius:10px;padding:8px 16px;font:700 13px ui-monospace,monospace;transition:.12s}
+.btn:hover{background:#1d2f52}.btn:active{transform:translateY(2px)}
+.btn.tab{color:#a5c0e1}.btn.tab.active{background:#0f2033;color:var(--cyan);border-color:var(--cyan)}
+.btn.on{background:#14432f;color:var(--green);border-color:#2f6e4f}
+.read{font:700 14px ui-monospace,monospace;background:#0a0f1b;border:1px solid #26375a;border-radius:8px;padding:5px 12px;color:var(--cyan)}
+.read b{color:var(--gold)}
+.numin{width:64px;background:#0a0f1b;border:1px solid #26375a;border-radius:8px;color:var(--gold);font:700 14px ui-monospace,monospace;padding:5px 6px;text-align:center}
+.hint{width:100%;text-align:center;color:var(--sub);font-size:12.5px}
+ul.pts{list-style:none;margin:4px 0 6px;display:grid;gap:5px}
+ul.pts li{position:relative;padding-left:17px;color:#c7d4e8;font-size:13.5px}
+ul.pts li::before{content:"";position:absolute;left:2px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--cyan)}
+.l2 .pts li::before{background:var(--green)}.l3 .pts li::before{background:var(--gold)}
+.l4 .pts li::before{background:var(--orange)}.l5 .pts li::before{background:var(--purple)}
+.conn{display:flex;justify-content:center;padding:12px 0}
+.conn .tip{font:600 12.5px ui-monospace,monospace;color:var(--sub);background:#141d31;border:1px dashed #2c3e5d;border-radius:999px;padding:5px 15px}
+footer{max-width:960px;margin:0 auto;padding:0 16px 50px;text-align:center;color:var(--sub);font-size:13.5px}
+footer b{color:var(--gold)}
+/* ===== SVG ===== */
+.wire{stroke:#3f5170;stroke-width:2.4;fill:none;stroke-linecap:round;transition:stroke .15s}
+.wire.h{stroke:var(--gold);stroke-dasharray:7 8;animation:df .7s linear infinite;filter:drop-shadow(0 0 3px rgba(251,191,36,.45))}
+@keyframes df{to{stroke-dashoffset:-15}}
+.wire.v{stroke:var(--red);stroke-width:3}
+.gate{fill:#1a2740;stroke:#7c8db0;stroke-width:2}
+.bub{fill:#101726;stroke:#7c8db0;stroke-width:2}
+.lamp{fill:#161f31;stroke:#41527a;stroke-width:2;transition:.15s}
+.lamp.on{fill:#fde68a;stroke:var(--gold);filter:drop-shadow(0 0 9px rgba(251,191,36,.9))}
+.lb{fill:#cbd5e1;font:600 13px ui-monospace,monospace}
+.lbs{fill:#8fa3bf;font:500 11px ui-monospace,monospace}
+.gtt{fill:#a5c0e1;font:700 12.5px ui-monospace,monospace;text-anchor:middle}
+.dotn{fill:#e2e8f0}
+.fft{fill:#9fb6d8;font:700 12.5px ui-monospace,monospace}
+.chip{fill:#1a2740;stroke:#33486e;stroke-width:1.5;transition:.2s}
+.chip.act{stroke:var(--gold);stroke-width:2.4;filter:drop-shadow(0 0 6px rgba(251,191,36,.5))}
+.tth{fill:#e2e8f0;font:600 12.5px ui-monospace,monospace;text-anchor:middle}
+.ttd{fill:#8fa3bf;font:600 12px ui-monospace,monospace;text-anchor:middle}
+.ttc{fill:#fbbf24;font:800 12px ui-monospace,monospace;text-anchor:middle}
+.subblk{fill:#141d31;stroke:#2c3e5d;stroke-width:1.5;transition:.2s}
+.subblk.act{stroke:var(--gold);stroke-width:2.4;filter:drop-shadow(0 0 6px rgba(251,191,36,.5))}
+.stage{fill:#141d31;stroke:#2c3e5d;stroke-width:1.8;transition:.25s}
+.stage.act{stroke:var(--gold);stroke-width:2.6;fill:#1e2a44;filter:drop-shadow(0 0 7px rgba(251,191,36,.55))}
+.stname{fill:#9fb6d8;font:700 13px ui-monospace,monospace;text-anchor:middle;pointer-events:none}
+.stsub{fill:#64748b;font:500 10.5px ui-monospace,monospace;text-anchor:middle;pointer-events:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CPU 控制器 · 可动手原理图</h1>
+  <p>从"一条指令怎么走完 CPU"下钻到"控制信号怎么由晶体管算出来" · 金色流动线 = 数据 / 控制流</p>
+</header>
+
+<nav><div class="in">
+  <a href="#l1">L1 CPU 大循环</a><a href="#l2">L2 指令译码</a><a href="#l3">L3 信号门电路</a><a href="#l4">L4 微程序</a><a href="#l5">L5 硬布线 vs 微程序</a>
+</div></nav>
+
+<main>
+
+<!-- ================= L1 CPU 五阶段 ================= -->
+<section class="layer l1" id="l1">
+  <div class="lh"><span class="badge">L1</span>
+    <div><h2>控制器在 CPU 里的位置 —— 五阶段大循环</h2><div class="sub">取指 IF → 译码 ID → 执行 EX → 访存 MEM → 写回 WB，控制器是"指挥官"</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 560">
+    <defs><marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7c8db0"/></marker></defs>
+    <!-- 顶行：IF→ID→EX -->
+    <rect class="stage" id="st-if" x="60" y="70" width="140" height="90" rx="10"/>
+    <text class="stname" x="130" y="105">① 取指 IF</text>
+    <text class="stsub" x="130" y="126">PC → 指令存储器</text>
+    <text class="stsub" x="130" y="142">取出指令</text>
+    <rect class="stage" id="st-id" x="280" y="70" width="140" height="90" rx="10"/>
+    <text class="stname" x="350" y="105">② 译码 ID</text>
+    <text class="stsub" x="350" y="126">识别操作码</text>
+    <text class="stsub" x="350" y="142">发出控制信号</text>
+    <rect class="stage" id="st-ex" x="500" y="70" width="140" height="90" rx="10"/>
+    <text class="stname" x="570" y="105">③ 执行 EX</text>
+    <text class="stsub" x="570" y="126">ALU 运算</text>
+    <text class="stsub" x="570" y="142">或算地址</text>
+    <!-- MEM / WB 底行 -->
+    <rect class="stage" id="st-mem" x="500" y="250" width="140" height="90" rx="10"/>
+    <text class="stname" x="570" y="285">④ 访存 MEM</text>
+    <text class="stsub" x="570" y="306">读写数据存储器</text>
+    <rect class="stage" id="st-wb" x="280" y="250" width="140" height="90" rx="10"/>
+    <text class="stname" x="350" y="285">⑤ 写回 WB</text>
+    <text class="stsub" x="350" y="306">结果写入寄存器</text>
+    <!-- 控制器 -->
+    <rect class="subblk" id="cu-box" x="280" y="400" width="140" height="70" rx="8"/>
+    <text class="tth" x="350" y="428">控制器 CU</text>
+    <text class="lbs" x="350" y="450" text-anchor="middle">本页主角 · 下面层层拆</text>
+    <!-- 顶行连线 -->
+    <path class="wire" id="lw-if-id" d="M200,115 H280" marker-end="url(#arrC)"/>
+    <path class="wire" id="lw-id-ex" d="M420,115 H500" marker-end="url(#arrC)"/>
+    <path class="wire" id="lw-ex-mem" d="M570,160 V250" marker-end="url(#arrC)"/>
+    <path class="wire" id="lw-mem-wb" d="M500,295 H420" marker-end="url(#arrC)"/>
+    <!-- 写回 PC -->
+    <path class="wire" id="lw-wb-pc" d="M280,295 H150 V160" marker-end="url(#arrC)"/>
+    <text class="lbs" x="160" y="232" fill="#a78bfa">下一条指令地址</text>
+    <!-- 控制总线 -->
+    <path class="wire" id="lw-cu-id" d="M350,400 V160" marker-end="url(#arrC)"/>
+    <path class="wire" id="lw-cu-ex" d="M420,428 H700 V160" marker-end="url(#arrC)"/>
+    <path class="wire" id="lw-cu-mem" d="M420,460 H720 V340 H640" marker-end="url(#arrC)"/>
+    <text class="lbs" x="735" y="260" fill="#fbbf24">控制信号总线</text>
+    <text class="lbs" x="735" y="278">（读写使能、ALU 选</text>
+    <text class="lbs" x="735" y="294">运算、寄存器写入…）</text>
+    <!-- PC 显示 -->
+    <text class="lbs" x="60" y="46">PC 程序计数器</text>
+    <text class="lb" id="l1-pcv" x="130" y="48" text-anchor="middle" fill="#fbbf24">0</text>
+    <!-- 当前阶段指示 -->
+    <text class="lb" id="l1-phase" x="620" y="48" fill="#fbbf24">阶段：待机</text>
+    <text class="lbs" id="l1-instr" x="620" y="66">指令：—</text>
+    <!-- 程序清单 -->
+    <rect class="chip" x="60" y="370" width="190" height="170" rx="8"/>
+    <text class="tth" x="155" y="392">程序（4 条指令）</text>
+    <text class="ttd l1-pr" id="l1-p0" x="155" y="416">0: ADD R1,R2,R3</text>
+    <text class="ttd l1-pr" id="l1-p1" x="155" y="438">1: LD  R4,[R5]</text>
+    <text class="ttd l1-pr" id="l1-p2" x="155" y="460">2: ST  R1,[R5]</text>
+    <text class="ttd l1-pr" id="l1-p3" x="155" y="482">3: BEQ +1（跳转）</text>
+    <text class="lbs" x="155" y="510" text-anchor="middle">当前 PC 行高亮</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">PC 初值</span><input type="number" class="numin" id="l1-npc" min="0" max="3" value="0">
+      <button class="btn" id="l1-reset">↺ 复位</button></div>
+    <div class="grp"><button class="btn" id="l1-step">▶ 单步（走一个阶段）</button>
+      <label class="sw"><input type="checkbox" id="l1-auto"><span class="kn"></span></label><span class="ctl-l">自动运行</span></div>
+    <div class="grp"><span class="ctl-l">当前 =</span><span class="read" id="l1-state">阶段 0 · PC=0</span></div>
+    <div class="hint">按「单步」：金色流动线沿"取指 → 译码 → 执行 → 访存 → 写回 → 更新 PC"走一圈，控制器同步点亮它正在指挥的部件。</div>
+  </div>
+  <ul class="pts">
+    <li><b>控制器 CU 不做运算</b>，它只发控制信号：告诉 ALU 算什么、寄存器堆写不写、存储器读还是写</li>
+    <li>五个阶段一圈就是一条指令的生命周期；PC 自动 +1（或跳转）让程序往前走</li>
+    <li>每一阶段都会"点亮"对应的部件 —— 这就是指挥官的工作方式</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 译码阶段内部：操作码怎么变成 7 路控制信号</span></div>
+
+<!-- ================= L2 指令译码器 ================= -->
+<section class="layer l2" id="l2">
+  <div class="lh"><span class="badge">L2</span>
+    <div><h2>指令译码器 Instruction Decoder —— 操作码 → 控制信号</h2><div class="sub">填一个 3 位操作码（0~7）→ 译码器点亮对应的 7 路控制信号</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 520">
+    <!-- opcode 输入 -->
+    <text class="lbs" x="56" y="104" text-anchor="end">opcode</text>
+    <text class="lb" x="120" y="98" id="dc-opv" fill="#fbbf24">000 (ADD)</text>
+    <path class="wire" id="dc-win" d="M120,110 H330"/>
+    <path d="M296,118 L312,102" stroke="#7c8db0" stroke-width="2" fill="none"/>
+    <text class="lbs" x="317" y="100">3</text>
+    <!-- 译码器大框 -->
+    <rect class="chip" id="dc-dec" x="330" y="60" width="180" height="100" rx="10"/>
+    <text class="tth" x="420" y="100">指令译码器</text>
+    <text class="lbs" x="420" y="122" text-anchor="middle">3 位操作码</text>
+    <text class="lbs" x="420" y="140" text-anchor="middle">→ 7 位控制字</text>
+    <!-- 控制线 -->
+    <path class="wire" id="dc-c0" d="M510,72 H720"/>
+    <path class="wire" id="dc-c1" d="M510,86 H720"/>
+    <path class="wire" id="dc-c2" d="M510,100 H720"/>
+    <path class="wire" id="dc-c3" d="M510,114 H720"/>
+    <path class="wire" id="dc-c4" d="M510,128 H720"/>
+    <path class="wire" id="dc-c5" d="M510,142 H720"/>
+    <path class="wire" id="dc-c6" d="M510,156 H720"/>
+    <!-- 信号灯 -->
+    <circle class="lamp dc-lamp" id="dc-l0" cx="735" cy="72" r="10"/>
+    <circle class="lamp dc-lamp" id="dc-l1" cx="735" cy="86" r="10"/>
+    <circle class="lamp dc-lamp" id="dc-l2" cx="735" cy="100" r="10"/>
+    <circle class="lamp dc-lamp" id="dc-l3" cx="735" cy="114" r="10"/>
+    <circle class="lamp dc-lamp" id="dc-l4" cx="735" cy="128" r="10"/>
+    <circle class="lamp dc-lamp" id="dc-l5" cx="735" cy="142" r="10"/>
+    <circle class="lamp dc-lamp" id="dc-l6" cx="735" cy="156" r="10"/>
+    <text class="lbs" x="755" y="76" id="dc-t0">RegWrite 写寄存器</text>
+    <text class="lbs" x="755" y="90" id="dc-t1">ALUSrc 立即数→ALU</text>
+    <text class="lbs" x="755" y="104" id="dc-t2">MemRead 读存储器</text>
+    <text class="lbs" x="755" y="118" id="dc-t3">MemWrite 写存储器</text>
+    <text class="lbs" x="755" y="132" id="dc-t4">MemToReg 存储器→寄存器</text>
+    <text class="lbs" x="755" y="146" id="dc-t5">Branch 条件跳转</text>
+    <text class="lbs" x="755" y="160" id="dc-t6">JMP 无条件跳转</text>
+    <!-- 指令集真值表 -->
+    <rect class="chip" x="60" y="200" width="800" height="270" rx="10"/>
+    <text class="tth" x="460" y="224">指令集（8 条）· 当前操作码对应行高亮</text>
+    <text class="ttd" x="120" y="252">op</text>
+    <text class="ttd" x="200" y="252">指令</text>
+    <text class="ttd" x="330" y="252">RegWr</text>
+    <text class="ttd" x="410" y="252">ALUSrc</text>
+    <text class="ttd" x="490" y="252">MemRd</text>
+    <text class="ttd" x="570" y="252">MemWr</text>
+    <text class="ttd" x="650" y="252">Mem2Reg</text>
+    <text class="ttd" x="730" y="252">Branch</text>
+    <text class="ttd" x="800" y="252">JMP</text>
+    <text class="ttd dc-tr" id="dc-tr0" x="460" y="278">000 ADD Rd,Ra,Rb │ 1 0 0 0 0 0 0</text>
+    <text class="ttd dc-tr" id="dc-tr1" x="460" y="302">001 SUB Rd,Ra,Rb │ 1 0 0 0 0 0 0</text>
+    <text class="ttd dc-tr" id="dc-tr2" x="460" y="326">010 LD  Rd,[Ra]  │ 1 0 1 0 1 0 0</text>
+    <text class="ttd dc-tr" id="dc-tr3" x="460" y="350">011 ST  [Ra],Rb  │ 0 0 0 1 0 0 0</text>
+    <text class="ttd dc-tr" id="dc-tr4" x="460" y="374">100 BEQ offset   │ 0 0 0 0 0 1 0</text>
+    <text class="ttd dc-tr" id="dc-tr5" x="460" y="398">101 JMP addr     │ 0 0 0 0 0 0 1</text>
+    <text class="ttd dc-tr" id="dc-tr6" x="460" y="422">110 AND Rd,Ra,Rb │ 1 0 0 0 0 0 0</text>
+    <text class="ttd dc-tr" id="dc-tr7" x="460" y="446">111 OR  Rd,Ra,Rb │ 1 0 0 0 0 0 0</text>
+    <text class="lbs" id="dc-msg" x="460" y="490" text-anchor="middle"></text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">填操作码（0~7）：</span><input type="number" class="numin" id="dc-num" min="0" max="7" value="0"></div>
+    <div class="grp"><span class="ctl-l">或拨位开关：</span><span id="dc-sw" style="display:flex;gap:8px;align-items:center"></span></div>
+    <div class="grp">
+      <button class="btn tab" data-op="0">ADD</button><button class="btn tab" data-op="1">SUB</button>
+      <button class="btn tab" data-op="2">LD</button><button class="btn tab" data-op="3">ST</button>
+      <button class="btn tab" data-op="4">BEQ</button><button class="btn tab" data-op="5">JMP</button>
+    </div>
+    <div class="hint" id="dc-hint"></div>
+  </div>
+  <ul class="pts">
+    <li>译码器是<b>组合逻辑</b>：输入一变，7 路控制信号立刻变，没有时钟</li>
+    <li>每一行就是"这条指令需要哪些部件动起来" —— LD 要读存储器、ST 要写存储器、BEQ 只发 Branch</li>
+    <li>三条输入通道完全等价：数字框 / 位开关 / 指令按钮，随便哪个变，另两个同步</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 译码器内部：单条控制信号的门电路</span></div>
+
+<!-- ================= L3 控制信号门电路 ================= -->
+<section class="layer l3" id="l3">
+  <div class="lh"><span class="badge">L3</span>
+    <div><h2>控制信号的门电路 —— RegWrite = ~op₂ · ~op₁</h2><div class="sub">ADD/SUB/LD/AND/OR 都要写寄存器（op=000/001/010/110/111），其反面就是 ST/BEQ/JMP</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 440">
+    <defs>
+      <g id="gANDc"><path class="gate" d="M0,-22 L12,-22 A22,22 0 0 1 12,22 L0,22 Z"/><text class="gtt" x="8" y="5">AND</text></g>
+      <g id="gNOTc"><path class="gate" d="M0,-18 L36,0 L0,18 Z"/><circle class="bub" cx="41" cy="0" r="4.5"/></g>
+    </defs>
+    <!-- op2 输入 -->
+    <text class="lbs" x="48" y="104" text-anchor="end">op₂</text>
+    <text class="lb" id="r3-op2v" x="130" y="98" fill="#fbbf24">0</text>
+    <path class="wire" id="r3-op2" d="M130,110 H213"/>
+    <circle class="dotn" cx="170" cy="110" r="3.5"/>
+    <path class="wire" id="r3-op2b" d="M170,110 V210 H213"/>
+    <use href="#gNOTc" transform="translate(260,110)" id="r3-n1"/>
+    <path class="wire" id="r3-n1o" d="M306,110 H360"/>
+    <!-- op1 输入 -->
+    <text class="lbs" x="48" y="224" text-anchor="end">op₁</text>
+    <text class="lb" id="r3-op1v" x="130" y="218" fill="#fbbf24">0</text>
+    <path class="wire" id="r3-op1" d="M130,230 H213"/>
+    <circle class="dotn" cx="170" cy="230" r="3.5"/>
+    <path class="wire" id="r3-op1b" d="M170,230 V130 H213"/>
+    <use href="#gNOTc" transform="translate(260,230)" id="r3-n2"/>
+    <path class="wire" id="r3-n2o" d="M306,230 H360"/>
+    <!-- AND -->
+    <use href="#gANDc" transform="translate(420,170)" id="r3-and"/>
+    <path class="wire" id="r3-andout" d="M454,170 H560"/>
+    <circle class="lamp" id="r3-lamp" cx="578" cy="170" r="13"/>
+    <text class="lb" x="578" y="204" text-anchor="middle">RegWrite</text>
+    <text class="lb" id="r3-rw" x="620" y="166" fill="#fbbf24">= 1</text>
+    <!-- 真值表 -->
+    <rect class="chip" x="660" y="60" width="230" height="220" rx="8"/>
+    <text class="tth" x="775" y="84">op₂ op₁ │ RegWrite</text>
+    <text class="ttd r3-tr" id="r3-tr0" x="775" y="110">0    0    │   1  ← ADD</text>
+    <text class="ttd r3-tr" id="r3-tr1" x="775" y="136">0    1    │   0  ← ST</text>
+    <text class="ttd r3-tr" id="r3-tr2" x="775" y="162">1    0    │   0  ← BEQ</text>
+    <text class="ttd r3-tr" id="r3-tr3" x="775" y="188">1    1    │   0  ← JMP</text>
+    <text class="lbs" x="775" y="230" text-anchor="middle">（简化的 4 行，真实 CPU 用</text>
+    <text class="lbs" x="775" y="250" text-anchor="middle">更多位组合）</text>
+    <text class="lbs" id="r3-msg" x="400" y="410" text-anchor="middle"></text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">op₂</span><label class="sw"><input type="checkbox" id="r3-s2"><span class="kn"></span></label>
+      <span class="ctl-l">op₁</span><label class="sw"><input type="checkbox" id="r3-s1"><span class="kn"></span></label></div>
+    <div class="grp"><span class="ctl-l">RegWrite =</span><span class="read" id="r3-rwv">1</span></div>
+    <div class="hint">拨 op₂=0, op₁=1（= ST 指令）：两个反相器都亮、AND 输出 0 → RegWrite 灭，存储器写入使能才会亮（对照 L2 第 011 行）。</div>
+  </div>
+  <ul class="pts">
+    <li>每一路控制信号都是<b>操作码位的布尔函数</b> —— 硬布线控制器的本质</li>
+    <li>RegWrite=1 的指令（ADD/SUB/LD/AND/OR）在 op₂ op₁ 上没有统一的 1 位区分 → 实际用更多位</li>
+    <li>门电路管数：2 个 NOT（4 管）+ 1 个 AND（6 管）= <b>10 管</b>，就生成了一路控制信号</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">另一种控制器实现 ↓ 把控制字存在存储器里：微程序</span></div>
+
+<!-- ================= L4 微程序控制器 ================= -->
+<section class="layer l4" id="l4">
+  <div class="lh"><span class="badge">L4</span>
+    <div><h2>微程序控制器 Microprogram —— 控制字存在"控制存储器"里</h2><div class="sub">每条机器指令 = 一段微程序；填一个微地址（0~7），读出对应的控制字</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 480">
+    <!-- μPC -->
+    <rect class="subblk" id="mu-upc" x="60" y="60" width="120" height="60" rx="8"/>
+    <text class="tth" x="120" y="86">μPC 微地址</text>
+    <text class="lb" id="mu-pcv" x="120" y="108" text-anchor="middle" fill="#fbbf24">0</text>
+    <path class="wire" id="mu-w1" d="M180,90 H280"/>
+    <!-- 控制存储器 -->
+    <rect class="chip" id="mu-cs" x="280" y="40" width="240" height="200" rx="10"/>
+    <text class="tth" x="400" y="66">控制存储器 Control Store</text>
+    <text class="lbs" x="400" y="86" text-anchor="middle">8 条微指令 · 每条 = 下一地址 + 7 位控制字</text>
+    <text class="lbs mu-row" id="mu-r0" x="400" y="112" text-anchor="middle">0: next=1 │ 1 0 0 0 0 0 0</text>
+    <text class="lbs mu-row" id="mu-r1" x="400" y="132" text-anchor="middle">1: next=2 │ 0 1 1 0 0 0 0</text>
+    <text class="lbs mu-row" id="mu-r2" x="400" y="152" text-anchor="middle">2: next=3 │ 0 0 0 1 0 0 0</text>
+    <text class="lbs mu-row" id="mu-r3" x="400" y="172" text-anchor="middle">3: next=4 │ 0 0 0 0 1 0 0</text>
+    <text class="lbs mu-row" id="mu-r4" x="400" y="192" text-anchor="middle">4: next=5 │ 0 0 0 0 0 0 0</text>
+    <text class="lbs mu-row" id="mu-r5" x="400" y="212" text-anchor="middle">5: next=0 │ 0 0 0 0 0 0 0</text>
+    <text class="lbs mu-row" id="mu-r6" x="400" y="232" text-anchor="middle">6: next=0 │ 0 0 0 0 0 1 0</text>
+    <text class="lbs" x="400" y="256" text-anchor="middle" fill="#a78bfa">读出的微指令点亮控制字各位</text>
+    <!-- 控制字输出 -->
+    <path class="wire" id="mu-w2" d="M520,90 H640"/>
+    <text class="lbs" x="640" y="80">控制字</text>
+    <circle class="lamp mu-lamp" id="mu-l0" cx="660" cy="90" r="9"/>
+    <circle class="lamp mu-lamp" id="mu-l1" cx="690" cy="90" r="9"/>
+    <circle class="lamp mu-lamp" id="mu-l2" cx="720" cy="90" r="9"/>
+    <circle class="lamp mu-lamp" id="mu-l3" cx="750" cy="90" r="9"/>
+    <circle class="lamp mu-lamp" id="mu-l4" cx="780" cy="90" r="9"/>
+    <circle class="lamp mu-lamp" id="mu-l5" cx="810" cy="90" r="9"/>
+    <circle class="lamp mu-lamp" id="mu-l6" cx="840" cy="90" r="9"/>
+    <text class="lbs" x="660" y="118" text-anchor="middle">Wr</text>
+    <text class="lbs" x="690" y="118" text-anchor="middle">Src</text>
+    <text class="lbs" x="720" y="118" text-anchor="middle">Rd</text>
+    <text class="lbs" x="750" y="118" text-anchor="middle">WrM</text>
+    <text class="lbs" x="780" y="118" text-anchor="middle">2R</text>
+    <text class="lbs" x="810" y="118" text-anchor="middle">Br</text>
+    <text class="lbs" x="840" y="118" text-anchor="middle">JMP</text>
+    <!-- 下一地址反馈 -->
+    <path class="wire" id="mu-w3" d="M520,220 H580 V330 H120 V120" marker-end="url(#arrC)"/>
+    <text class="lbs" x="340" y="322" fill="#a78bfa">下一微地址字段 → 回写 μPC</text>
+    <text class="lbs" id="mu-msg" x="460" y="460" text-anchor="middle"></text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">填微地址（0~6）：</span><input type="number" class="numin" id="mu-num" min="0" max="6" value="0"></div>
+    <div class="grp"><button class="btn" id="mu-step">▶ 微步进（按下一地址走）</button>
+      <label class="sw"><input type="checkbox" id="mu-auto"><span class="kn"></span></label><span class="ctl-l">自动步进</span></div>
+    <div class="grp"><span class="ctl-l">当前控制字 =</span><span class="read" id="mu-cw">—</span></div>
+    <div class="hint">按「微步进」：μPC → 读出微指令 → 控制字点亮 → 下一地址写回 μPC，循环往复。一条机器指令 = 一段微程序。</div>
+  </div>
+  <ul class="pts">
+    <li><b>控制存储器</b>里存的是"控制字的位串" —— 修改它 = 改变 CPU 行为，不用改电路</li>
+    <li>每条微指令自带"<b>下一微地址</b>"字段 → 微程序可以顺序执行、也可以条件分支</li>
+    <li>x86（Intel/AMD）至今用微程序实现复杂指令；RISC（ARM/RISC-V）基本全硬布线</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">最后一层 ↓ 两种实现方式的对比与晶体管代价</span></div>
+
+<!-- ================= L5 硬布线 vs 微程序 ================= -->
+<section class="layer l5" id="l5">
+  <div class="lh"><span class="badge">L5</span>
+    <div><h2>硬布线 Hardwired vs 微程序 Microprogrammed</h2><div class="sub">同一个"译码 + 发信号"任务，两种截然不同的实现哲学</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 380">
+    <!-- 硬布线 -->
+    <g id="hw-v">
+      <text class="tth" x="230" y="40" font-size="14">硬布线控制器</text>
+      <rect class="chip" id="hw-op" x="90" y="70" width="80" height="50" rx="6"/>
+      <text class="lbs" x="130" y="100" text-anchor="middle">opcode</text>
+      <path class="wire" d="M170,95 H220"/>
+      <rect class="subblk" id="hw-pla" x="220" y="50" width="140" height="90" rx="8"/>
+      <text class="tth" x="290" y="90">组合逻辑</text>
+      <text class="lbs" x="290" y="110" text-anchor="middle">与阵列 + 或阵列</text>
+      <text class="lbs" x="290" y="126" text-anchor="middle">≈ 数千~数万管</text>
+      <path class="wire" d="M360,95 H410"/>
+      <text class="lbs" x="415" y="80">7 路控制信号</text>
+      <circle class="lamp hw-l" cx="430" cy="80" r="8"/>
+      <circle class="lamp hw-l" cx="430" cy="100" r="8"/>
+      <circle class="lamp hw-l" cx="430" cy="120" r="8"/>
+      <text class="lbs" x="230" y="170" text-anchor="middle">延迟：1 级门（快！）· 灵活性：改指令要改电路</text>
+    </g>
+    <!-- 微程序 -->
+    <g id="mp-v" style="display:none">
+      <text class="tth" x="690" y="40" font-size="14">微程序控制器</text>
+      <rect class="chip" id="mp-op" x="530" y="70" width="80" height="50" rx="6"/>
+      <text class="lbs" x="570" y="100" text-anchor="middle">opcode</text>
+      <path class="wire" d="M610,95 H640"/>
+      <rect class="subblk" id="mp-map" x="640" y="50" width="70" height="90" rx="8"/>
+      <text class="tth" x="675" y="90">映射</text>
+      <text class="lbs" x="675" y="110" text-anchor="middle">ROM</text>
+      <path class="wire" d="M710,95 H740"/>
+      <rect class="subblk" id="mp-cs" x="740" y="50" width="130" height="90" rx="8"/>
+      <text class="tth" x="805" y="90">控制存储器</text>
+      <text class="lbs" x="805" y="110" text-anchor="middle">微指令 ROM</text>
+      <path class="wire" d="M870,95 H900"/>
+      <text class="lbs" x="745" y="170" text-anchor="middle">延迟：读存储器（慢）· 灵活性：改指令=改 ROM 内容</text>
+    </g>
+    <!-- 对比表 -->
+    <rect class="chip" x="60" y="200" width="800" height="160" rx="10"/>
+    <text class="tth" x="460" y="224">对比一览（切换按钮同步）</text>
+    <text class="ttd" x="130" y="252">速度</text>
+    <text class="ttd" x="330" y="252">晶体管</text>
+    <text class="ttd" x="530" y="252">灵活性</text>
+    <text class="ttd" x="710" y="252">典型应用</text>
+    <text class="ttd hw-r" id="cmp-hw" x="460" y="280">1 级门 · 快 │ 数千~数万管 │ 改指令要改电路 │ RISC-V、ARM、MIPS</text>
+    <text class="ttd mp-r" id="cmp-mp" x="460" y="308">读 ROM · 慢 │ ROM 为主，更省逻辑管 │ 改指令=改 ROM │ x86 复杂指令、早期 CISC</text>
+    <text class="lbs" x="460" y="344" text-anchor="middle">现代 CPU：RISC 简单指令走硬布线，复杂指令降级成"微程序 + 硬布线"混合 —— 两者不是对立而是协作</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp">
+      <button class="btn tab active" id="cmp-bhw">硬布线视图</button>
+      <button class="btn tab" id="cmp-bmp">微程序视图</button>
+    </div>
+    <div class="grp"><span class="ctl-l">指令数 N</span><input type="range" id="cmp-n" min="8" max="256" value="16"><span class="read" id="cmp-nv">16 条</span></div>
+    <div class="grp"><span class="ctl-l">硬布线管数 ≈</span><span class="read" id="cmp-hwn">—</span>
+      <span class="ctl-l">微程序 ROM 位 ≈</span><span class="read" id="cmp-mpn">—</span></div>
+    <div class="hint">拖动"指令数 N"滑块：指令越多，硬布线的组合逻辑管数平方级膨胀，而微程序只是 ROM 变长 —— 这就是 CISC 走微程序路线的根本原因。</div>
+  </div>
+  <ul class="pts">
+    <li><b>硬布线</b>：opcode 直通组合逻辑（L3 那种门电路阵列），速度极快，但指令集复杂时电路爆炸</li>
+    <li><b>微程序</b>：把控制字当数据存 ROM（L4），指令集可以很复杂，代价是每步要读一次存储器</li>
+    <li>至此全链条打通：<b>晶体管 → 门 → 译码器 → 控制信号 → 微程序 → 五阶段循环</b>，CPU 的"指挥系统"每一层都摸过了</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  四页一套：<b>硅→寄存器</b> · <b>ALU</b> · <b>门→晶体管</b> · <b>控制器</b> —— 数据通路 + 控制通路，CPU 的两大主干都在你手里拨过了。
+</footer>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const H=(el,on)=>{if(el)el.classList.toggle('h',!!on)};
+const bin=(v,n)=>v.toString(2).padStart(n,'0');
+
+/* ============ L1 五阶段大循环 ============ */
+(function(){
+  const STAGES=['IF','ID','EX','MEM','WB'];
+  const NAMES=['取指','译码','执行','访存','写回'];
+  const PROG=[
+    {txt:'0: ADD R1,R2,R3',sig:'RegWrite=1, ALU=ADD'},
+    {txt:'1: LD  R4,[R5]',sig:'RegWrite=1, MemRead=1, MemToReg=1'},
+    {txt:'2: ST  R1,[R5]',sig:'MemWrite=1'},
+    {txt:'3: BEQ +1',sig:'Branch=1, ALU=SUB(比较)'}
+  ];
+  const st={pc:0,phase:-1,auto:null,runId:0};
+  const stageIds=['st-if','st-id','st-ex','st-mem','st-wb'];
+  const wireIds=[['lw-if-id'],['lw-id-ex'],['lw-ex-mem'],['lw-mem-wb','lw-wb-pc'],[]];
+  function clear(){
+    stageIds.forEach(id=>$(id).classList.remove('act'));
+    wireIds.flat().forEach(id=>{const e=$(id);e.classList.remove('h');e.style.opacity='';});
+    $('lw-cu-id').classList.remove('h');$('lw-cu-id').style.opacity='';
+    $('cu-box').classList.remove('act');
+    document.querySelectorAll('.l1-pr').forEach(r=>r.setAttribute('class','ttd l1-pr'));
+  }
+  function highlightPC(){
+    const r=$('l1-p'+st.pc);if(r)r.setAttribute('class','ttc l1-pr');
+  }
+  function showPhase(p){
+    clear();highlightPC();
+    $('l1-pcv').textContent=st.pc;
+    $('l1-instr').textContent='指令：'+PROG[st.pc].txt.slice(3);
+    $('cu-box').classList.add('act');H($('lw-cu-id'),true);
+    if(p>=0&&p<5){
+      $(stageIds[p]).classList.add('act');
+      wireIds[p].forEach(id=>{const e=$(id);e.classList.add('h');e.style.opacity='';});
+      $('l1-phase').textContent='阶段：'+(p+1)+'·'+NAMES[p]+'（'+STAGES[p]+'）';
+      $('l1-state').innerHTML=`阶段 ${p+1}/5 · PC=${st.pc} · <b>${NAMES[p]}</b>`;
+    }else{
+      $('l1-phase').textContent='阶段：待机';
+      $('l1-state').textContent='阶段 0 · PC='+st.pc;
+    }
+  }
+  function step(){
+    const id=++st.runId;
+    st.phase=(st.phase+1)%6;
+    if(st.phase===5){
+      /* WB 完成 → PC 前进 */
+      showPhase(4);
+      setTimeout(()=>{if(id!==st.runId)return;
+        st.pc=(st.pc+1)%4;
+        st.phase=-1;clear();highlightPC();
+        $('l1-pcv').textContent=st.pc;
+        $('l1-phase').textContent='阶段：待机（PC 已更新，下一条就绪）';
+        $('l1-state').textContent='PC 已推进 → '+st.pc;
+        $('l1-instr').textContent='指令：—';
+      },600);
+      return;
+    }
+    showPhase(st.phase);
+  }
+  $('l1-npc').oninput=e=>{
+    let v=parseInt(e.target.value);if(isNaN(v))v=0;v=Math.max(0,Math.min(3,v));
+    st.pc=v;st.phase=-1;st.runId++;clear();highlightPC();
+    $('l1-pcv').textContent=st.pc;$('l1-state').textContent='阶段 0 · PC='+st.pc;
+    $('l1-instr').textContent='指令：—';$('l1-phase').textContent='阶段：待机';
+  };
+  $('l1-reset').onclick=()=>{st.pc=+($('l1-npc').value||0);st.phase=-1;st.runId++;clear();highlightPC();
+    $('l1-pcv').textContent=st.pc;$('l1-state').textContent='阶段 0 · PC='+st.pc;
+    $('l1-instr').textContent='指令：—';$('l1-phase').textContent='阶段：待机';};
+  $('l1-step').onclick=step;
+  $('l1-auto').onchange=e=>{
+    if(e.target.checked)st.auto=setInterval(step,900);
+    else clearInterval(st.auto);
+  };
+  highlightPC();
+})();
+
+/* ============ L2 指令译码器 ============ */
+(function(){
+  const OPS=[
+    {name:'ADD',sig:[1,0,0,0,0,0,0],d:'算术指令：写寄存器，ALU 做加法，不访存'},
+    {name:'SUB',sig:[1,0,0,0,0,0,0],d:'算术指令：写寄存器，ALU 做减法'},
+    {name:'LD', sig:[1,0,1,0,1,0,0],d:'加载：算地址 → 读存储器 → 结果写回寄存器'},
+    {name:'ST', sig:[0,0,0,1,0,0,0],d:'存储：把寄存器内容写到存储器，不写寄存器'},
+    {name:'BEQ',sig:[0,0,0,0,0,1,0],d:'条件跳转：ALU 做比较，相等则 PC 跳转'},
+    {name:'JMP',sig:[0,0,0,0,0,0,1],d:'无条件跳转：PC 直接改成目标地址'},
+    {name:'AND',sig:[1,0,0,0,0,0,0],d:'逻辑：写寄存器，ALU 做与'},
+    {name:'OR', sig:[1,0,0,0,0,0,0],d:'逻辑：写寄存器，ALU 做或'}
+  ];
+  const st={op:0};
+  const swWrap=$('dc-sw');
+  [2,1,0].forEach(b=>{
+    const sp=document.createElement('span');sp.className='ctl-l';sp.textContent='op'+b;swWrap.appendChild(sp);
+    const lb=document.createElement('label');lb.className='sw';
+    lb.innerHTML=`<input type="checkbox" data-b="${b}"><span class="kn"></span>`;
+    swWrap.appendChild(lb);
+  });
+  function syncSw(){
+    [...swWrap.querySelectorAll('input')].forEach(inp=>{
+      inp.checked=!!((st.op>>+inp.dataset.b)&1);
+    });
+  }
+  function render(){
+    const o=OPS[st.op];
+    $('dc-opv').textContent=bin(st.op,3)+' ('+o.name+')';
+    for(let i=0;i<7;i++){
+      const on=o.sig[i];
+      $('dc-l'+i).classList.toggle('on',!!on);
+      const w=$('dc-c'+i);H(w,on);w.style.opacity=on?'':.35;
+      $('dc-t'+i).style.color=on?'#fbbf24':'';
+    }
+    document.querySelectorAll('.dc-tr').forEach((r,i)=>r.setAttribute('class',i===st.op?'ttc dc-tr':'ttd dc-tr'));
+    $('dc-num').value=st.op;syncSw();
+    const act=o.sig.map((v,i)=>v?['RegWr','ALUSrc','MemRd','MemWr','Mem2Reg','Branch','JMP'][i]:null).filter(Boolean);
+    $('dc-hint').innerHTML=`<b style="color:#fbbf24">${o.name}</b>（${bin(st.op,3)}）→ ${act.length?act.join(' + '):'不使能任何信号'} —— ${o.d}`;
+    $('dc-msg').textContent=`当前：opcode=${bin(st.op,3)} → 控制字 ${o.sig.join('')}（7 位）`;
+  }
+  $('dc-num').oninput=e=>{let v=parseInt(e.target.value);if(isNaN(v))v=0;st.op=Math.max(0,Math.min(7,v));render();};
+  swWrap.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{
+    let v=0;swWrap.querySelectorAll('input').forEach(x=>{if(x.checked)v|=(1<<+x.dataset.b);});
+    st.op=v;render();
+  });
+  document.querySelectorAll('#l2 .tab[data-op]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#l2 .tab[data-op]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');st.op=+b.dataset.op;render();
+  });
+  render();
+})();
+
+/* ============ L3 RegWrite 门电路 ============ */
+(function(){
+  const st={op2:0,op1:0};
+  function render(){
+    const n2=st.op2?0:1, n1=st.op1?0:1, out=n2&n1;
+    $('r3-op2v').textContent=st.op2;$('r3-op1v').textContent=st.op1;
+    H($('r3-op2'),st.op2);H($('r3-op2b'),st.op2);H($('r3-n1o'),n2);
+    H($('r3-op1'),st.op1);H($('r3-op1b'),st.op1);H($('r3-n2o'),n1);
+    $('r3-n1').style.opacity=n2?1:.4;$('r3-n2').style.opacity=n1?1:.4;
+    $('r3-and').style.opacity=out?1:.5;
+    H($('r3-andout'),out);
+    $('r3-lamp').classList.toggle('on',!!out);
+    $('r3-rw').textContent='= '+out;
+    $('r3-rw').setAttribute('fill',out?'#fbbf24':'#64748b');
+    const idx=st.op2*2+st.op1;
+    document.querySelectorAll('.r3-tr').forEach((r,i)=>r.setAttribute('class',i===idx?'ttc r3-tr':'ttd r3-tr'));
+    $('r3-rwv').textContent=out;
+    const iname=['ADD（写）','ST（不写）','BEQ（不写）','JMP（不写）'][idx];
+    $('r3-msg').textContent=`op₂=${st.op2}, op₁=${st.op1} → 取反后 ${n2},${n1} → AND 输出 ${out}（对应指令：${iname}）`;
+  }
+  $('r3-s2').onchange=e=>{st.op2=e.target.checked?1:0;render();};
+  $('r3-s1').onchange=e=>{st.op1=e.target.checked?1:0;render();};
+  render();
+})();
+
+/* ============ L4 微程序 ============ */
+(function(){
+  const MICRO=[
+    {next:1,cw:[1,0,0,0,0,0,0],d:'取指微指令：只使能 RegWr？不，这里演示控制字 — 第 0 条示意'},
+    {next:2,cw:[0,1,1,0,0,0,0],d:'地址计算 + 发起读存储器'},
+    {next:3,cw:[0,0,0,1,0,0,0],d:'发起写存储器'},
+    {next:4,cw:[0,0,0,0,1,0,0],d:'存储器数据选通到寄存器写入口'},
+    {next:5,cw:[0,0,0,0,0,0,0],d:'空操作 / 等待'},
+    {next:0,cw:[0,0,0,0,0,0,0],d:'回到取指，循环'},
+    {next:0,cw:[0,0,0,0,0,1,0],d:'条件跳转微指令'}
+  ];
+  const st={addr:0,auto:null};
+  function render(){
+    const m=MICRO[st.addr];
+    $('mu-pcv').textContent=st.addr;
+    $('mu-cs').classList.add('act');
+    document.querySelectorAll('.mu-row').forEach((r,i)=>r.setAttribute('class',i===st.addr?'ttc mu-row':'lbs mu-row'));
+    for(let i=0;i<7;i++){
+      const on=m.cw[i];
+      $('mu-l'+i).classList.toggle('on',!!on);
+    }
+    $('mu-msg').textContent=`μPC=${st.addr} → 读出微指令：next=${m.next}，控制字 ${m.cw.join('')} —— ${m.d}`;
+  }
+  $('mu-num').oninput=e=>{
+    let v=parseInt(e.target.value);if(isNaN(v))v=0;st.addr=Math.max(0,Math.min(6,v));render();
+  };
+  function step(){
+    st.addr=MICRO[st.addr].next;
+    $('mu-num').value=st.addr;render();
+  }
+  $('mu-step').onclick=step;
+  $('mu-auto').onchange=e=>{
+    if(e.target.checked)st.auto=setInterval(step,900);
+    else clearInterval(st.auto);
+  };
+  render();
+})();
+
+/* ============ L5 硬布线 vs 微程序 ============ */
+(function(){
+  const st={view:'hw'};
+  function render(){
+    $('hw-v').style.display=st.view==='hw'?'':'none';
+    $('mp-v').style.display=st.view==='mp'?'':'none';
+    $('cmp-bhw').classList.toggle('active',st.view==='hw');
+    $('cmp-bmp').classList.toggle('active',st.view==='mp');
+    document.querySelectorAll('.hw-r').forEach(r=>r.setAttribute('fill',st.view==='hw'?'#fbbf24':'#8fa3bf'));
+    document.querySelectorAll('.mp-r').forEach(r=>r.setAttribute('fill',st.view==='mp'?'#fbbf24':'#8fa3bf'));
+    document.querySelectorAll('.hw-l').forEach(l=>l.classList.toggle('on',st.view==='hw'));
+  }
+  $('cmp-bhw').onclick=()=>{st.view='hw';render();};
+  $('cmp-bmp').onclick=()=>{st.view='mp';render();};
+  function calc(){
+    const N=+$('cmp-n').value;
+    $('cmp-nv').textContent=N+' 条';
+    /* 粗略模型：硬布线 ≈ N²·3 管（组合逻辑随指令数平方级膨胀） */
+    const hw=N*N*3;
+    /* 微程序：映射 ROM + 控制字 ROM ≈ N × 10 位 + 固定几千管 */
+    const mp=N*10+3000;
+    $('cmp-hwn').innerHTML=(hw>=10000?(hw/10000).toFixed(1)+'万':hw)+' <b>管</b>';
+    $('cmp-mpn').innerHTML=(mp>=10000?(mp/10000).toFixed(1)+'万':mp)+' <b>位</b>';
+  }
+  $('cmp-n').oninput=calc;
+  calc();render();
+})();
+
+/* nav 高亮 */
+(function(){
+  const links=[...document.querySelectorAll('nav a')];
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)
+      links.forEach(l=>l.classList.toggle('cur',l.getAttribute('href')==='#'+e.target.id));});
+  },{rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('section.layer').forEach(s=>io.observe(s));
+})();
+</script>
+</body>
+</html>

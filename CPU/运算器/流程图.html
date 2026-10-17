@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>运算器下钻 · 从门到晶体管 · 可动手原理图</title>
+<style>
+:root{--bg:#0b0f1a;--card:#101726;--line:#22304a;--txt:#e2e8f0;--sub:#8fa3bf;
+--cyan:#22d3ee;--green:#4ade80;--red:#f87171;--orange:#fb923c;--gold:#fbbf24;--purple:#a78bfa;}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6}
+header{max-width:960px;margin:0 auto;padding:42px 20px 18px;text-align:center}
+header h1{font-size:27px}header p{color:var(--sub);margin-top:6px;font-size:13.5px}
+nav{position:sticky;top:0;z-index:9;background:rgba(11,15,26,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .in{max-width:960px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:9px 16px}
+nav a{color:var(--sub);text-decoration:none;font:600 13px ui-monospace,monospace;padding:5px 12px;border-radius:8px;white-space:nowrap}
+nav a.cur{color:#0b0f1a;background:var(--cyan)}
+main{max-width:960px;margin:0 auto;padding:22px 14px 40px}
+section.layer{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 12px;scroll-margin-top:64px}
+.lh{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.badge{flex:0 0 auto;font:800 13px ui-monospace,monospace;color:#0b0f1a;background:var(--cyan);border-radius:8px;padding:3px 10px}
+.l2b{background:var(--green)}.l3b{background:var(--gold)}.l4b{background:var(--orange)}.l5b{background:var(--purple)}
+.lh h2{font-size:18.5px}.lh .sub{color:var(--sub);font:500 11.5px ui-monospace,monospace}
+.svgwrap{margin:6px 0 2px;text-align:center}.svgwrap svg{width:100%;max-width:920px;height:auto}
+.panel{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;background:#0d1422;border:1px solid #1c2a44;border-radius:12px;padding:11px 14px;margin:6px 0 8px}
+.panel .grp{display:flex;gap:9px;align-items:center;padding-right:12px;border-right:1px dashed #26375a}
+.panel .grp:last-child{border-right:0}
+.ctl-l{font:600 12.5px ui-monospace,monospace;color:var(--sub)}
+.sw{position:relative;display:inline-block;width:50px;height:26px;cursor:pointer}
+.sw input{opacity:0;width:0;height:0}
+.sw .kn{position:absolute;inset:0;background:#1c2a44;border:1px solid #33486e;border-radius:26px;transition:.18s}
+.sw .kn::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#64748b;transition:.18s}
+.sw input:checked+.kn{background:#14432f;border-color:var(--green)}
+.sw input:checked+.kn::before{transform:translateX(24px);background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.7)}
+.btn{cursor:pointer;background:#16233c;color:var(--gold);border:1px solid #3a4d73;border-radius:10px;padding:8px 16px;font:700 13px ui-monospace,monospace;transition:.12s}
+.btn:hover{background:#1d2f52}.btn:active{transform:translateY(2px)}
+.btn.tab{color:#a5c0e1}.btn.tab.active{background:#0f2033;color:var(--cyan);border-color:var(--cyan)}
+.btn.on{background:#14432f;color:var(--green);border-color:#2f6e4f}
+.read{font:700 14px ui-monospace,monospace;background:#0a0f1b;border:1px solid #26375a;border-radius:8px;padding:5px 12px;color:var(--cyan)}
+.read b{color:var(--gold)}
+input[type=range]{accent-color:var(--cyan);width:130px}
+.hint{width:100%;text-align:center;color:var(--sub);font-size:12.5px}
+ul.pts{list-style:none;margin:4px 0 6px;display:grid;gap:5px}
+ul.pts li{position:relative;padding-left:17px;color:#c7d4e8;font-size:13.5px}
+ul.pts li::before{content:"";position:absolute;left:2px;top:8px;width:7px;height:7px;border-radius:50%;background:var(--cyan)}
+.l2 .pts li::before{background:var(--green)}.l3 .pts li::before{background:var(--gold)}
+.l4 .pts li::before{background:var(--orange)}.l5 .pts li::before{background:var(--purple)}
+.conn{display:flex;justify-content:center;padding:12px 0}
+.conn .tip{font:600 12.5px ui-monospace,monospace;color:var(--sub);background:#141d31;border:1px dashed #2c3e5d;border-radius:999px;padding:5px 15px}
+footer{max-width:960px;margin:0 auto;padding:0 16px 50px;text-align:center;color:var(--sub);font-size:13.5px}
+footer b{color:var(--gold)}
+/* SVG 通用 */
+.wire{stroke:#3f5170;stroke-width:2.4;fill:none;stroke-linecap:round;transition:stroke .15s}
+.wire.h{stroke:var(--gold);stroke-dasharray:7 8;animation:df .7s linear infinite;filter:drop-shadow(0 0 3px rgba(251,191,36,.45))}
+@keyframes df{to{stroke-dashoffset:-15}}
+.lamp{fill:#161f31;stroke:#41527a;stroke-width:2;transition:.15s}
+.lamp.on{fill:#fde68a;stroke:var(--gold);filter:drop-shadow(0 0 9px rgba(251,191,36,.9))}
+.lb{fill:#cbd5e1;font:600 13px ui-monospace,monospace}
+.lbs{fill:#8fa3bf;font:500 11px ui-monospace,monospace}
+.gtt{fill:#a5c0e1;font:700 12.5px ui-monospace,monospace;text-anchor:middle}
+.dotn{fill:#e2e8f0}
+.chip{fill:#1a2740;stroke:#33486e;stroke-width:1.5}
+.tth{fill:#e2e8f0;font:600 12.5px ui-monospace,monospace;text-anchor:middle}
+.ttd{fill:#8fa3bf;font:600 12px ui-monospace,monospace;text-anchor:middle}
+.ttc{fill:#fbbf24;font:800 12px ui-monospace,monospace;text-anchor:middle}
+.subblk{fill:#141d31;stroke:#2c3e5d;stroke-width:1.5;transition:.2s}
+.subblk.act{stroke:var(--gold);stroke-width:2.4;filter:drop-shadow(0 0 6px rgba(251,191,36,.5))}
+.tnode{fill:#182338;stroke:#2c3e5d;stroke-width:1.5;cursor:pointer;transition:.2s}
+.tnode:hover{stroke:var(--cyan)}
+.tnode.sel{stroke:var(--gold);stroke-width:2.4;filter:drop-shadow(0 0 6px rgba(251,191,36,.45))}
+.tlab{fill:#9fb6d8;font:700 12px ui-monospace,monospace;text-anchor:middle;pointer-events:none}
+.tsub{fill:#64748b;font:500 10px ui-monospace,monospace;text-anchor:middle;pointer-events:none}
+.gate{fill:#1a2740;stroke:#7c8db0;stroke-width:2}
+.bub{fill:#101726;stroke:#7c8db0;stroke-width:2}
+.mw{stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>运算器下钻 · 从门到晶体管</h1>
+  <p>接续《CPU 运算器》—— 把加法器里的门打开到晶体管，再看清开关的速度与功耗代价 · 金色流动线 = 导通路径</p>
+</header>
+
+<nav><div class="in">
+  <a href="#l1">L1 晶体管清单</a><a href="#l2">L2 传输门</a><a href="#l3">L3 XOR 晶体管级</a><a href="#l4">L4 选择器 MUX</a><a href="#l5">L5 延迟与功耗</a>
+</div></nav>
+
+<main>
+
+<!-- ================= L1 晶体管清单 ================= -->
+<section class="layer l1" id="l1">
+  <div class="lh"><span class="badge">L1</span>
+    <div><h2>晶体管清单 Transistor Budget —— 一个加法器要用多少管？</h2><div class="sub">点击树中任意方框查看构成 · 拖动位宽滑块看数量怎么爆炸</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 500">
+    <defs>
+      <marker id="arrT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7c8db0"/></marker>
+    </defs>
+    <!-- 树 -->
+    <rect class="tnode" id="b1-fa" x="370" y="28" width="180" height="56" rx="8"/>
+    <text class="tlab" x="460" y="52">全加器 FA · 28 管</text>
+    <text class="tsub" x="460" y="70">ALU 页 L3 的真身</text>
+    <path class="wire" d="M460,84 V106 H240 V128 M460,106 H660 V128"/>
+    <rect class="tnode" id="b1-ha" x="150" y="128" width="180" height="56" rx="8"/>
+    <text class="tlab" x="240" y="152">半加器 · 18 管</text>
+    <text class="tsub" x="240" y="170">ALU 页 L4 的真身</text>
+    <rect class="tnode" id="b1-carr" x="560" y="128" width="200" height="56" rx="8"/>
+    <text class="tlab" x="660" y="152">进位合并 OR 等 · ≈10 管</text>
+    <text class="tsub" x="660" y="170">两个半加器的进位取或</text>
+    <path class="wire" d="M240,184 V206 H175 V228 M240,206 H400 V228"/>
+    <rect class="tnode" id="b1-xor12" x="90" y="228" width="170" height="56" rx="8"/>
+    <text class="tlab" x="175" y="252">XOR 异或门 · 12 管</text>
+    <text class="tlab" x="175" y="270" font-size="11" fill="#fbbf24">半加器的"和"</text>
+    <rect class="tnode" id="b1-and" x="320" y="228" width="160" height="56" rx="8"/>
+    <text class="tlab" x="400" y="252">AND 与门 · 6 管</text>
+    <text class="tlab" x="400" y="270" font-size="11" fill="#fbbf24">半加器的"进位"</text>
+    <path class="wire" d="M175,284 V306 H135 V328 M175,306 H305 V328"/>
+    <rect class="tnode" id="b1-xor8" x="60" y="328" width="150" height="56" rx="8"/>
+    <text class="tlab" x="135" y="352">TG 实现 · 8 管</text>
+    <text class="tsub" x="135" y="370">本页 L3 详讲 ↓</text>
+    <rect class="tnode" id="b1-xor12s" x="230" y="328" width="150" height="56" rx="8"/>
+    <text class="tlab" x="305" y="352">静态 CMOS · 12 管</text>
+    <text class="tsub" x="305" y="370">教科书通用画法</text>
+    <path class="wire" d="M400,284 V306 H385 V328 M400,306 H545 V328"/>
+    <rect class="tnode" id="b1-nand" x="315" y="328" width="140" height="56" rx="8"/>
+    <text class="tlab" x="385" y="352">NAND · 4 管</text>
+    <text class="tsub" x="385" y="370">上一页 L3 已拆</text>
+    <rect class="tnode" id="b1-not" x="475" y="328" width="140" height="56" rx="8"/>
+    <text class="tlab" x="545" y="352">NOT · 2 管</text>
+    <text class="tsub" x="545" y="370">1 PMOS + 1 NMOS</text>
+    <!-- 底部：1管 → 数百亿 -->
+    <path class="wire g" d="M60,440 H850" stroke-dasharray="4 6"/>
+    <g><circle class="lamp" cx="100" cy="440" r="8"/><text class="lbs" x="100" y="468" text-anchor="middle">1 个晶体管</text></g>
+    <text class="lbs" x="230" y="444">= 1 个电压开关 →</text>
+    <g><rect class="subblk" x="340" y="424" width="60" height="32" rx="5"/><text class="lbs" x="370" y="444" text-anchor="middle">几个门</text><text class="lbs" x="370" y="468" text-anchor="middle">≈几十管</text></g>
+    <text class="lbs" x="430" y="444">→</text>
+    <g><rect class="subblk" x="460" y="424" width="70" height="32" rx="5"/><text class="lbs" x="495" y="444" text-anchor="middle">1 个 ALU</text><text class="lbs" x="495" y="468" text-anchor="middle">数千管</text></g>
+    <text class="lbs" x="558" y="444">→</text>
+    <g><rect class="subblk" x="590" y="424" width="80" height="32" rx="5"/><text class="lbs" x="630" y="444" text-anchor="middle">整个 CPU</text><text class="lbs" x="630" y="468" text-anchor="middle">数百亿管</text></g>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">加法器位宽 N：</span><input type="range" id="b1-n" min="1" max="64" value="4"><span class="read" id="b1-nv">4 位</span></div>
+    <div class="grp">
+      <button class="btn tab" data-n="4">4 位</button><button class="btn tab" data-n="8">8 位</button>
+      <button class="btn tab" data-n="32">32 位</button><button class="btn tab" data-n="64">64 位</button>
+    </div>
+    <div class="grp"><span class="ctl-l">晶体管 ≈</span><span class="read" id="b1-cnt">112 <b>管</b></span></div>
+    <div class="grp"><span class="ctl-l">门延迟 ≈</span><span class="read" id="b1-dly">9 <b>级</b></span></div>
+    <div class="hint" id="b1-hint"></div>
+  </div>
+  <ul class="pts">
+    <li>点击树上任意方框，看它的构成与管数 —— <b>半加器 18 管 = XOR 12 + AND 6</b></li>
+    <li>N 位行波加法器 ≈ <b>28×N 个晶体管</b>、≈2.25×N 级门延迟（呼应 ALU 页"4 位≈9 级"）</li>
+    <li>M1 有 160 亿管 —— 只相当于 <b>5.7 亿个</b>这种 1 位全加器，剩下全是缓存和控制逻辑</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ XOR 里那个神秘优化的「传输门」是什么</span></div>
+
+<!-- ================= L2 传输门 ================= -->
+<section class="layer l2" id="l2">
+  <div class="lh"><span class="badge">L2</span>
+    <div><h2>传输门 Transmission Gate —— CMOS 的完美开关</h2><div class="sub">NMOS 传 1 会打折、PMOS 传 0 会打折 —— 两个并联互补后 0 和 1 都完美</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 400">
+    <text class="lbs" x="56" y="192" text-anchor="end">Vin</text>
+    <text class="lb" x="110" y="186" id="tg-vint">0 V</text>
+    <path class="wire" id="tg-win" d="M110,210 H370"/>
+    <path d="M330,218 L346,202" stroke="#7c8db0" stroke-width="2" fill="none"/>
+    <text class="lbs" x="351" y="200">数据</text>
+    <!-- NMOS -->
+    <g id="tg-nmos">
+      <path class="wire" d="M370,210 H400"/><path class="wire" d="M460,210 H700"/>
+      <use href="#mosHu" transform="translate(430,210)"/>
+      <path class="wire g" d="M430,180 V150"/>
+      <text class="lbs" x="430" y="140" text-anchor="middle">栅 = +5V（恒导）</text>
+    </g>
+    <!-- PMOS -->
+    <g id="tg-pmos" style="display:none">
+      <path class="wire" d="M370,210 H400"/><path class="wire" d="M460,210 H700"/>
+      <use href="#mosHd" transform="translate(430,210)"/>
+      <path class="wire g" d="M430,240 V272"/>
+      <text class="lbs" x="430" y="288" text-anchor="middle">栅 = 0V（恒导）</text>
+    </g>
+    <!-- TG -->
+    <g id="tg-tg" style="display:none">
+      <path class="wire" d="M370,180 V240"/>
+      <path class="wire" d="M370,180 H400 M370,240 H400"/>
+      <path class="wire" d="M460,180 H490 M460,240 H490"/>
+      <path class="wire" d="M490,180 V240"/>
+      <use href="#mosHu" transform="translate(430,180)"/>
+      <use href="#mosHd" transform="translate(430,240)"/>
+      <path class="wire g" d="M430,150 V132"/>
+      <text class="lbs" x="430" y="124" text-anchor="middle">上栅 5V / 下栅 0V</text>
+      <path class="wire g" d="M430,270 V288"/>
+      <text class="lbs" x="430" y="304" text-anchor="middle">两栅互补 → 恒导通</text>
+      <text class="lbs" x="425" y="168" text-anchor="end">NMOS</text>
+      <text class="lbs" x="425" y="252" text-anchor="end">PMOS</text>
+    </g>
+    <text class="lbs" x="700" y="188" text-anchor="end">Vout</text>
+    <circle class="dotn" cx="700" cy="210" r="4.5"/>
+    <!-- 负载电容 -->
+    <path class="wire g" d="M700,210 V250"/>
+    <path d="M684,258 H716 M684,268 H716" stroke="#94a3b8" stroke-width="2.4" fill="none"/>
+    <path class="wire g" d="M700,278 V294 M686,294 H714 M693,301 H707 M700,308 H700"/>
+    <text class="lbs" x="700" y="326" text-anchor="middle">负载电容 C（下级栅）</text>
+    <!-- 电压柱 -->
+    <rect x="770" y="110" width="44" height="180" fill="#0a0f1b" stroke="#33486e" rx="4"/>
+    <rect id="tg-lq" x="774" y="110" width="36" height="180" rx="3" fill="#fbbf24" opacity=".85" style="transform-origin:792px 290px;transform:scaleY(0);transition:transform .7s ease"/>
+    <path d="M766,110 H788 M766,164 H782 M766,236 H782 M766,290 H788" stroke="#64748b" stroke-width="1.6"/>
+    <text class="lbs" x="796" y="114">5V</text>
+    <text class="lbs" x="796" y="168" fill="#fb923c">3.5V</text>
+    <text class="lbs" x="796" y="240" fill="#fb923c">1.5V</text>
+    <text class="lbs" x="796" y="294">0V</text>
+    <text class="lbs" x="792" y="100" text-anchor="middle">VTH = 1.5V</text>
+    <text class="lb" id="tg-vout" x="792" y="84" text-anchor="middle" fill="#fbbf24">Vout = 0 V</text>
+    <!-- 灯 -->
+    <circle class="lamp" id="tg-lamp" cx="866" cy="210" r="15"/>
+    <circle id="tg-glow" cx="866" cy="210" r="11" fill="#fde68a" opacity="0"/>
+    <text class="lbs" x="866" y="244" text-anchor="middle">亮度=Vout</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp">
+      <button class="btn tab active" id="tg-bn">NMOS 单独</button>
+      <button class="btn tab" id="tg-bp">PMOS 单独</button>
+      <button class="btn tab" id="tg-bt">传输门 TG</button>
+    </div>
+    <div class="grp"><span class="ctl-l">Vin 输入</span><label class="sw"><input type="checkbox" id="tg-vin"><span class="kn"></span></label></div>
+    <div class="grp"><span class="ctl-l">Vin =</span><span class="read" id="tg-rin">0 V</span><span class="ctl-l">Vout =</span><span class="read" id="tg-rout">0 V</span></div>
+    <div class="hint" id="tg-hint">选 NMOS、拨 Vin=1：看电压柱只充到 3.5V 就卡住 —— 「强 0 弱 1」！</div>
+  </div>
+  <ul class="pts">
+    <li><b>NMOS 强 0 弱 1</b>：传 1 时输出最高只能到 V<sub>G</sub>−V<sub>TH</sub> = 3.5V（沟道一接近栅压就关自己）</li>
+    <li><b>PMOS 强 1 弱 0</b>：传 0 最低只能到 |V<sub>TH</sub>| = 1.5V —— 正好和 NMOS 互补</li>
+    <li><b>TG = 两管并联</b>：弱项互相补齐，0/1 都满幅 —— 这也解释了上一页 CMOS 门里 NMOS 管下拉、PMOS 管上拉的分工</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ 用 TG 搭出加法器的心脏：XOR</span></div>
+
+<!-- ================= L3 XOR 晶体管级 ================= -->
+<section class="layer l3" id="l3">
+  <div class="lh"><span class="badge">L3</span>
+    <div><h2>XOR 门的晶体管级 —— 8 管传输门实现</h2><div class="sub">Y = A?B̅:B（A 当选择信号）· 全加器里两个 XOR 就是 16 管</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 600">
+    <!-- A -->
+    <text class="lbs" x="48" y="104" text-anchor="end">A</text>
+    <path class="wire" id="xo-a" d="M58,100 H160"/>
+    <circle class="dotn" cx="160" cy="100" r="3.5"/>
+    <path class="wire" id="xo-ainv" d="M160,100 V180 H213"/>
+    <use href="#invO" transform="translate(235,180)" id="xo-inv1"/>
+    <path class="wire" id="xo-ab" d="M266,180 H440"/>
+    <text class="lbs" x="352" y="170" text-anchor="middle">A̅ 网络 → 接 TG1 上栅 / TG2 下栅</text>
+    <path class="wire" id="xo-ad" d="M160,100 V60 H360"/>
+    <text class="lbs" x="170" y="50">A 网络 → 接 TG2 上栅 / TG1 下栅</text>
+    <!-- B -->
+    <text class="lbs" x="48" y="219" text-anchor="end">B</text>
+    <path class="wire" id="xo-b" d="M58,215 H500"/>
+    <circle class="dotn" cx="200" cy="215" r="3.5"/>
+    <path class="wire" id="xo-binv" d="M200,215 V400 H213"/>
+    <use href="#invO" transform="translate(235,400)" id="xo-inv2"/>
+    <path class="wire" id="xo-bb" d="M266,400 H500"/>
+    <!-- TG1 -->
+    <rect class="subblk" id="xo-tg1" x="450" y="135" width="220" height="140" rx="10"/>
+    <text class="lbs" x="560" y="270" text-anchor="middle" fill="#a78bfa">TG1 · A=0 时导通</text>
+    <path class="wire" d="M500,188 V242"/>
+    <path class="wire" d="M500,188 H530 M500,242 H530"/>
+    <path class="wire" d="M590,188 H620 M590,242 H620"/>
+    <path class="wire" d="M620,188 V242"/>
+    <use href="#mosHu" transform="translate(560,188)"/>
+    <use href="#mosHd" transform="translate(560,242)"/>
+    <path class="wire" d="M560,158 V146"/><text class="lbs" x="560" y="138" text-anchor="middle">上栅 ← A̅</text>
+    <path class="wire" d="M560,272 V284"/><text class="lbs" x="560" y="298" text-anchor="middle">下栅 ← A</text>
+    <text class="lbs" x="528" y="182" text-anchor="end">B</text>
+    <text class="lbs" x="628" y="182">out</text>
+    <!-- TG2 -->
+    <rect class="subblk" id="xo-tg2" x="450" y="330" width="220" height="140" rx="10"/>
+    <text class="lbs" x="560" y="465" text-anchor="middle" fill="#a78bfa">TG2 · A=1 时导通</text>
+    <path class="wire" d="M500,383 V437"/>
+    <path class="wire" d="M500,383 H530 M500,437 H530"/>
+    <path class="wire" d="M590,383 H620 M590,437 H620"/>
+    <path class="wire" d="M620,383 V437"/>
+    <use href="#mosHu" transform="translate(560,383)"/>
+    <use href="#mosHd" transform="translate(560,437)"/>
+    <path class="wire" d="M560,353 V341"/><text class="lbs" x="560" y="333" text-anchor="middle">上栅 ← A</text>
+    <path class="wire" d="M560,467 V479"/><text class="lbs" x="560" y="493" text-anchor="middle">下栅 ← A̅</text>
+    <text class="lbs" x="528" y="377" text-anchor="end">B̅</text>
+    <text class="lbs" x="628" y="377">out</text>
+    <!-- 汇合输出 -->
+    <path class="wire" id="xo-o1" d="M620,215 H690"/>
+    <path class="wire" id="xo-o2" d="M620,410 H690"/>
+    <path class="wire" d="M690,215 V410"/>
+    <path class="wire" id="xo-y" d="M690,312 H720"/>
+    <circle class="lamp" id="xo-lamp" cx="735" cy="312" r="13"/>
+    <text class="lb" x="735" y="285" text-anchor="middle">Y = A⊕B</text>
+    <!-- 真值表 -->
+    <rect class="chip" x="730" y="80" width="170" height="150" rx="8"/>
+    <text class="tth" x="815" y="102">A B │ Y</text>
+    <text class="ttd xo-tr" id="xo-tr0" x="815" y="126">0 0 │ 0</text>
+    <text class="ttd xo-tr" id="xo-tr1" x="815" y="150">0 1 │ 1</text>
+    <text class="ttd xo-tr" id="xo-tr2" x="815" y="174">1 0 │ 1</text>
+    <text class="ttd xo-tr" id="xo-tr3" x="815" y="198">1 1 │ 0</text>
+    <text class="lbs" id="xo-msg" x="400" y="560" text-anchor="middle"></text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">A</span><label class="sw"><input type="checkbox" id="xo-sa"><span class="kn"></span></label>
+      <span class="ctl-l">B</span><label class="sw"><input type="checkbox" id="xo-sb"><span class="kn"></span></label></div>
+    <div class="grp"><span class="ctl-l">Y =</span><span class="read" id="xo-yv">0</span></div>
+    <div class="hint">A=0：TG1 打开，Y 直通 B；A=1：TG2 打开，Y 直通 B̅ —— 一个"数据选择器"，正是 XOR 的本质。注意 B̅ 由第二个反相器现场生成。</div>
+  </div>
+  <ul class="pts">
+    <li><b>8 管 = 2 个反相器（各 2 管）+ 2 个传输门（各 2 管）</b>，比静态 CMOS 的 12 管省 1/3</li>
+    <li>XOR 就是"MUX 换个用法"：A=0 选 B、A=1 选 B̅ —— 这就是全加器 Sum = A⊕B⊕Cin 里前一个 XOR 的工作方式</li>
+    <li>真实 CPU 里这种 TG 结构大量存在：低管数、低负载电容、速度快</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">拆开一层 ↓ ALU 页 L1 那个 MUX 的晶体管真身</span></div>
+
+<!-- ================= L4 TG-MUX ================= -->
+<section class="layer l4" id="l4">
+  <div class="lh"><span class="badge">L4</span>
+    <div><h2>2 选 1 选择器 MUX —— 5 个晶体管</h2><div class="sub">S=0 输出 A、S=1 输出 B · ALU 页 L1 的 MUX 就是它的放大版</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 570">
+    <!-- S -->
+    <text class="lbs" x="48" y="104" text-anchor="end">S 选择</text>
+    <path class="wire" id="mx-s" d="M58,100 H160"/>
+    <circle class="dotn" cx="160" cy="100" r="3.5"/>
+    <path class="wire" id="mx-sinv" d="M160,100 V180 H213"/>
+    <use href="#invO" transform="translate(235,180)" id="mx-inv"/>
+    <path class="wire" id="mx-sb" d="M266,180 H440"/>
+    <text class="lbs" x="352" y="170" text-anchor="middle">S̅ 网络 → 接 TG1 上栅 / TG2 下栅</text>
+    <path class="wire" id="mx-sd" d="M160,100 V60 H360"/>
+    <text class="lbs" x="170" y="50">S 网络 → 接 TG2 上栅 / TG1 下栅</text>
+    <!-- A -->
+    <text class="lbs" x="48" y="219" text-anchor="end">A</text>
+    <path class="wire" id="mx-a" d="M58,215 H500"/>
+    <!-- TG1 -->
+    <rect class="subblk" id="mx-tg1" x="450" y="135" width="220" height="140" rx="10"/>
+    <text class="lbs" x="560" y="270" text-anchor="middle" fill="#a78bfa">TG1 · S=0 时导通</text>
+    <path class="wire" d="M500,188 V242"/>
+    <path class="wire" d="M500,188 H530 M500,242 H530"/>
+    <path class="wire" d="M590,188 H620 M590,242 H620"/>
+    <path class="wire" d="M620,188 V242"/>
+    <use href="#mosHu" transform="translate(560,188)"/>
+    <use href="#mosHd" transform="translate(560,242)"/>
+    <path class="wire" d="M560,158 V146"/><text class="lbs" x="560" y="138" text-anchor="middle">上栅 ← S̅</text>
+    <path class="wire" d="M560,272 V284"/><text class="lbs" x="560" y="298" text-anchor="middle">下栅 ← S</text>
+    <text class="lbs" x="528" y="182" text-anchor="end">A</text>
+    <text class="lbs" x="628" y="182">out</text>
+    <!-- B -->
+    <text class="lbs" x="48" y="414" text-anchor="end">B</text>
+    <path class="wire" id="mx-b" d="M58,410 H500"/>
+    <!-- TG2 -->
+    <rect class="subblk" id="mx-tg2" x="450" y="330" width="220" height="140" rx="10"/>
+    <text class="lbs" x="560" y="465" text-anchor="middle" fill="#a78bfa">TG2 · S=1 时导通</text>
+    <path class="wire" d="M500,383 V437"/>
+    <path class="wire" d="M500,383 H530 M500,437 H530"/>
+    <path class="wire" d="M590,383 H620 M590,437 H620"/>
+    <path class="wire" d="M620,383 V437"/>
+    <use href="#mosHu" transform="translate(560,383)"/>
+    <use href="#mosHd" transform="translate(560,437)"/>
+    <path class="wire" d="M560,353 V341"/><text class="lbs" x="560" y="333" text-anchor="middle">上栅 ← S</text>
+    <path class="wire" d="M560,467 V479"/><text class="lbs" x="560" y="493" text-anchor="middle">下栅 ← S̅</text>
+    <text class="lbs" x="528" y="377" text-anchor="end">B</text>
+    <text class="lbs" x="628" y="377">out</text>
+    <!-- 输出 -->
+    <path class="wire" id="mx-o1" d="M620,215 H690"/>
+    <path class="wire" id="mx-o2" d="M620,410 H690"/>
+    <path class="wire" d="M690,215 V410"/>
+    <path class="wire" id="mx-y" d="M690,312 H720"/>
+    <circle class="lamp" id="mx-lamp" cx="735" cy="312" r="13"/>
+    <text class="lb" x="735" y="285" text-anchor="middle">Y</text>
+    <!-- ALU 关联 -->
+    <rect class="chip" x="60" y="500" width="800" height="52" rx="8"/>
+    <text class="ttd" x="460" y="522">ALU 页 L1 的「多路选择器 MUX」= 本电路的放大版：4 选 1 = 3 个 2 选 1 级联 ≈ 15 管</text>
+    <text class="ttd" x="460" y="542">S 就是 OP 操作码译码后的选择信号 —— 译码器决定"哪条路通电"</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">S 选择</span><label class="sw"><input type="checkbox" id="mx-ss"><span class="kn"></span></label>
+      <span class="ctl-l">A</span><label class="sw"><input type="checkbox" id="mx-sa"><span class="kn"></span></label>
+      <span class="ctl-l">B</span><label class="sw"><input type="checkbox" id="mx-sb"><span class="kn"></span></label></div>
+    <div class="grp"><span class="ctl-l">Y =</span><span class="read" id="mx-yv">0</span></div>
+    <div class="hint">拨 S 切换：金链从 A 支路"跳"到 B 支路。两个 TG 永远一开一关 —— 这就是"选择"。</div>
+  </div>
+  <ul class="pts">
+    <li><b>S̅ 由一个反相器现场生成</b>（2 管）+ 两个 TG（各 2 管）= <b>共 5 管</b>的 2 选 1</li>
+    <li>对比上一页：L1 的 ALU 大 MUX、L2 的进位链、L3 的 XOR —— 全是这个电路的排列组合</li>
+    <li>一个 32 位 ALU 的输入选择 ≈ 32×15 ≈ 500 管，只是整颗 CPU 的九牛一毛</li>
+  </ul>
+</section>
+
+<div class="conn"><span class="tip">最后一层 ↓ 开关的速度与代价：为什么 64 位行波进位慢、为什么 CPU 会发热</span></div>
+
+<!-- ================= L5 延迟与功耗 ================= -->
+<section class="layer l5" id="l5">
+  <div class="lh"><span class="badge">L5</span>
+    <div><h2>门的延迟与功耗 —— 每次开关都是一次充放电</h2><div class="sub">t<sub>pd</sub> = 0.7·R·C · P = C·V²·f · 左：反相器驱动负载，右：延迟/功耗计算器</div></div>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 920 400">
+    <text class="lbs" x="48" y="134" text-anchor="end">A 输入</text>
+    <path class="wire" id="rc-a" d="M58,130 H350"/>
+    <circle class="dotn" cx="150" cy="130" r="3.5"/>
+    <path class="wire" id="rc-an" d="M150,130 V270 H350"/>
+    <path class="wire v" d="M380,60 V102" id="rc-vdd"/>
+    <text class="lb" x="372" y="50" fill="#f87171">VDD</text>
+    <use href="#pmosV" transform="translate(380,130)" id="rc-pm"/>
+    <use href="#mosV" transform="translate(380,270)" id="rc-nm"/>
+    <path class="wire" id="rc-mid" d="M380,158 V242"/>
+    <circle class="dotn" cx="380" cy="200" r="4.5"/>
+    <path class="wire" id="rc-out" d="M380,200 H560"/>
+    <text class="lbs" x="380" y="186" text-anchor="middle">输出节点</text>
+    <path class="wire g" d="M560,200 V238"/>
+    <path d="M544,246 H576 M544,256 H576" stroke="#94a3b8" stroke-width="2.4" fill="none"/>
+    <path class="wire g" d="M560,266 V286 M546,286 H574 M553,293 H567"/>
+    <text class="lbs" x="560" y="312" text-anchor="middle">负载电容 C</text>
+    <path class="wire g" d="M560,200 H620"/>
+    <path d="M628,178 V222" stroke="#7c8db0" stroke-width="3" fill="none"/>
+    <text class="lbs" x="648" y="204">下级栅极</text>
+    <text class="lbs" x="648" y="220">(= 负载)</text>
+    <path d="M362,330 H398 M369,338 H391 M376,346 H384" stroke="#94a3b8" stroke-width="2.2" fill="none"/>
+    <text class="lbs" x="380" y="366" text-anchor="middle">GND</text>
+    <!-- 粒子 -->
+    <g id="rc-pg" opacity="0">
+      <circle r="5" fill="#fbbf24"><animateMotion id="rc-m1" dur="1s" begin="indefinite" fill="freeze" path="M380,60 V200 H560 V246"/></circle>
+      <circle r="5" fill="#fbbf24"><animateMotion id="rc-m2" dur="1s" begin="indefinite" fill="freeze" path="M380,60 V200 H560 V246"/></circle>
+      <circle r="5" fill="#fbbf24"><animateMotion id="rc-m3" dur="1s" begin="indefinite" fill="freeze" path="M380,60 V200 H560 V246"/></circle>
+      <circle r="5" fill="#4ade80"><animateMotion id="rc-m4" dur="1s" begin="indefinite" fill="freeze" path="M560,246 V200 H380 V330"/></circle>
+      <circle r="5" fill="#4ade80"><animateMotion id="rc-m5" dur="1s" begin="indefinite" fill="freeze" path="M560,246 V200 H380 V330"/></circle>
+      <circle r="5" fill="#4ade80"><animateMotion id="rc-m6" dur="1s" begin="indefinite" fill="freeze" path="M560,246 V200 H380 V330"/></circle>
+    </g>
+    <!-- 电压柱 -->
+    <text class="lb" id="rc-vo" x="742" y="98" text-anchor="middle" fill="#fbbf24">Vout = 5.0V</text>
+    <rect x="720" y="110" width="44" height="190" fill="#0a0f1b" stroke="#33486e" rx="4"/>
+    <rect id="rc-lq" x="724" y="110" width="36" height="190" rx="3" fill="#fbbf24" opacity=".85" style="transform-origin:742px 300px;transform:scaleY(1);transition:transform .8s ease"/>
+    <path d="M716,110 H738 M716,300 H738" stroke="#64748b" stroke-width="1.6"/>
+    <text class="lbs" x="700" y="114" text-anchor="end">5V</text>
+    <text class="lbs" x="700" y="304" text-anchor="end">0V</text>
+    <text class="lbs" x="742" y="324" text-anchor="middle">输出电压</text>
+    <text class="lbs" id="rc-dir" x="742" y="348" text-anchor="middle" fill="#fbbf24"></text>
+    <text class="lbs" id="rc-msg" x="400" y="392" text-anchor="middle">翻转 A：充电走 PMOS（金点）、放电走 NMOS（绿点）—— 一次翻转 = 一次充放电 = 延迟 + 功耗</text>
+  </svg>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">A</span><label class="sw"><input type="checkbox" id="rc-sa"><span class="kn"></span></label>
+      <button class="btn" id="rc-flip">⚡ 翻转并计时</button></div>
+    <div class="grp"><span class="ctl-l">管宽 W(并联条数)</span><input type="range" id="rc-w" min="1" max="8" value="1"><span class="read" id="rc-wv">1</span></div>
+    <div class="grp"><span class="ctl-l">负载栅数</span><input type="range" id="rc-cl" min="1" max="20" value="4"><span class="read" id="rc-clv">4</span></div>
+    <div class="grp"><span class="ctl-l">R=</span><span class="read" id="rc-rr">10.0kΩ</span><span class="ctl-l">C=</span><span class="read" id="rc-cc">8fF</span><span class="ctl-l">t<sub>pd</sub>=</span><span class="read" id="rc-tp">56 ps</span></div>
+    <div class="hint" id="rc-hint">加大 W（晶体管做宽，导通电阻变小）→ 更快但更费面积；加大负载 → 更慢。行波进位 64 位 ≈ 144 级串联，每级都这么慢一次！</div>
+  </div>
+  <div class="panel">
+    <div class="grp"><span class="ctl-l">全芯片开关电容 C<sub>tot</sub></span><input type="range" id="rc-pc" min="2" max="50" value="10"><span class="read" id="rc-pcv">1.0 nF</span></div>
+    <div class="grp"><span class="ctl-l">电压 V</span><input type="range" id="rc-pv" min="5" max="12" value="11"><span class="read" id="rc-pvv">1.10 V</span></div>
+    <div class="grp"><span class="ctl-l">频率 f</span><input type="range" id="rc-pf" min="5" max="50" value="30"><span class="read" id="rc-pfv">3.0 GHz</span></div>
+    <div class="grp"><span class="ctl-l">动态功耗 P = C·V²·f =</span><span class="read" id="rc-pw">3.6 <b>W</b></span></div>
+    <div class="grp">
+      <button class="btn tab" data-p="0.8,2,1">手机 SoC</button>
+      <button class="btn tab" data-p="1.2,4.5,2">桌面 CPU</button>
+      <button class="btn tab" data-p="0.6,1,0.5">节能模式</button>
+    </div>
+    <div class="hint" id="rc-phint">把 V 从 1.2V 拖到 0.6V：功耗直接掉到 1/4 —— V² 平方律，这就是笔记本降压降频省电的原理（DVFS）。</div>
+  </div>
+  <ul class="pts">
+    <li><b>延迟来源</b>：每个门都要给下级的栅电容充/放电，t<sub>pd</sub> = 0.7·R·C —— 级联 N 级就慢 N 倍</li>
+    <li><b>功耗来源</b>：每次翻转充的电量 C·V 变成热 —— 频率翻倍、电压降不下来 = 发热爆炸（频率墙）</li>
+    <li>至此全链条打通：<b>掺杂硅 → 晶体管 → 门 → 加法器 → ALU → 寄存器</b>，CPU 数据通路的每一层你都亲手拨过了</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  三页一套：<b>硅→寄存器</b> · <b>ALU</b> · <b>门→晶体管</b> —— 数据通路的每一层，都可拨、可算、可看。
+</footer>
+
+<!-- 全局符号库（隐藏SVG，供各图 use 引用） -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <g id="mosV"><!-- 竖直流 NMOS：端子(0,±28) 栅朝左 -->
+    <path class="mw" stroke="#4ade80" d="M-30,0 H-14"/><path class="mw" stroke="#4ade80" d="M-14,-13 V13"/>
+    <path class="mw" stroke="#4ade80" d="M-6,-13 V-5 M-6,-1 V1 M-6,5 V13"/>
+    <path class="mw" stroke="#4ade80" d="M-6,-13 V-28 M-6,13 V28"/>
+  </g>
+  <g id="pmosV"><!-- 竖直流 PMOS：栅朝左带气泡 -->
+    <path class="mw" stroke="#fb923c" d="M-30,0 H-24"/><circle class="bub" cx="-20" cy="0" r="4" stroke="#fb923c"/>
+    <path class="mw" stroke="#fb923c" d="M-14,-13 V13"/>
+    <path class="mw" stroke="#fb923c" d="M-6,-13 V-5 M-6,-1 V1 M-6,5 V13"/>
+    <path class="mw" stroke="#fb923c" d="M-6,-13 V-28 M-6,13 V28"/>
+  </g>
+  <g id="mosHu"><!-- 水平流 NMOS：端子(±30,0) 栅朝上 -->
+    <path class="mw" stroke="#4ade80" d="M0,-30 V-14"/><path class="mw" stroke="#4ade80" d="M-13,-14 H13"/>
+    <path class="mw" stroke="#4ade80" d="M-13,-6 H-5 M-2,-6 H2 M5,-6 H13"/>
+    <path class="mw" stroke="#4ade80" d="M-13,-6 V0 H-30 M13,-6 V0 H30"/>
+  </g>
+  <g id="mosHd"><!-- 水平流 NMOS：栅朝下 -->
+    <path class="mw" stroke="#4ade80" d="M0,30 V14"/><path class="mw" stroke="#4ade80" d="M-13,14 H13"/>
+    <path class="mw" stroke="#4ade80" d="M-13,6 H-5 M-2,6 H2 M5,6 H13"/>
+    <path class="mw" stroke="#4ade80" d="M-13,6 V0 H-30 M13,6 V0 H30"/>
+  </g>
+  <g id="pmosHd"><!-- 水平流 PMOS：栅朝下带气泡（TG下管） -->
+    <path class="mw" stroke="#fb923c" d="M0,30 V24"/><circle class="bub" cx="0" cy="20" r="4" stroke="#fb923c"/>
+    <path class="mw" stroke="#fb923c" d="M0,14 V? "/>
+    <path class="mw" stroke="#fb923c" d="M-13,14 H13"/>
+    <path class="mw" stroke="#fb923c" d="M-13,6 H-5 M-2,6 H2 M5,6 H13"/>
+    <path class="mw" stroke="#fb923c" d="M-13,6 V0 H-30 M13,6 V0 H30"/>
+  </g>
+  <g id="invO"><!-- 反相器：in(-22,0) out(+31,0) -->
+    <path class="gate" d="M-22,-20 L22,0 L-22,20 Z"/><circle class="bub" cx="27" cy="0" r="5"/>
+  </g>
+</defs>
+</svg>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const H=(el,on)=>{if(el)el.classList.toggle('h',!!on)};
+
+/* ============ L1 晶体管清单 ============ */
+(function(){
+  const INFO={
+    'b1-fa':['全加器 FA','28 管','两个半加器（18T×2）+ 进位合并 OR 等 ≈10T。ALU 页 L3 的电路，管数就在这里。'],
+    'b1-ha':['半加器','18 管','XOR（12T）+ AND（6T）。算"和"与"进位"，但没有 Cin 输入，所以叫"半"。'],
+    'b1-carr':['进位合并','≈10 管','半加器①的进位 C₁ 和半加器②的进位 C₂ 用 OR（4T）等逻辑合并成 Cout，再加布线缓冲。'],
+    'b1-xor12':['XOR 异或门（静态 CMOS）','12 管','教科书通用实现：用 NAND/NOR/INV 组合。任何静态 CMOS 门 = PMOS 上拉网络 + NMOS 下拉网络。'],
+    'b1-and':['AND 与门','6 管','CMOS 没有"天然与门"：先 NAND（4T）再 NOT（2T）。见上一页 L3。'],
+    'b1-xor8':['XOR（TG 实现）','8 管','2 个反相器 + 2 个传输门 —— 本页 L3 详讲。省管、快、负载小，真实 CPU 大量使用。'],
+    'b1-xor12s':['XOR（静态 CMOS）','12 管','不依赖传输门的通用画法，教学与工艺无关场景常用。'],
+    'b1-nand':['NAND 与非门','4 管','2 PMOS 并联（上拉）+ 2 NMOS 串联（下拉）。任意一边输入 0 → Y=1。'],
+    'b1-not':['NOT 非门','2 管','1 PMOS + 1 NMOS，CMOS 的最小单元，也是一切门的"原子"。']
+  };
+  document.querySelectorAll('.tnode').forEach(n=>n.onclick=()=>{
+    document.querySelectorAll('.tnode').forEach(x=>x.classList.remove('sel'));
+    n.classList.add('sel');
+    const [name,cnt,desc]=INFO[n.id];
+    $('b1-hint').innerHTML=`<b style="color:#fbbf24">${name}</b> · ${cnt} —— ${desc}`;
+  });
+  const nEl=$('b1-n');
+  function upd(){
+    const n=+nEl.value;
+    $('b1-nv').textContent=n+' 位';
+    $('b1-cnt').innerHTML=`${28*n} <b>管</b>`;
+    const d=Math.round(2.25*n);
+    $('b1-dly').innerHTML=`${d} <b>级</b>`;
+    const m1=Math.round(1.6e10/(28*n));
+    $('b1-hint').innerHTML=`${n} 位行波加法器 ≈ <b>${28*n} 管</b>、≈${d} 级门延迟 · Apple M1 的 160 亿管 ≈ 可装 <b>${m1.toExponential(1)}</b> 个这样的加法器`;
+  }
+  nEl.oninput=upd;
+  document.querySelectorAll('#l1 .tab[data-n]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#l1 .tab[data-n]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');nEl.value=b.dataset.n;upd();
+  });
+  upd();$('b1-fa').classList.add('sel');
+})();
+
+/* ============ L2 传输门 ============ */
+(function(){
+  const st={dev:'n',vin:0};
+  function vout(){
+    if(st.dev==='n')return st.vin?3.5:0;
+    if(st.dev==='p')return st.vin?5:1.5;
+    return st.vin?5:0;
+  }
+  function render(){
+    $('tg-nmos').style.display=st.dev==='n'?'':'none';
+    $('tg-pmos').style.display=st.dev==='p'?'':'none';
+    $('tg-tg').style.display=st.dev==='t'?'':'none';
+    ['tg-bn','tg-bp','tg-bt'].forEach((id,i)=>$(id).classList.toggle('active',['n','p','t'][i]===st.dev));
+    const v=vout();
+    $('tg-vint').textContent=st.vin?'5 V':'0 V';
+    $('tg-vout').textContent='Vout = '+v.toFixed(1)+' V';
+    $('tg-rin').textContent=(st.vin?5:0)+' V';
+    $('tg-rout').textContent=v.toFixed(1)+' V';
+    $('tg-lq').style.transform='scaleY('+(v/5).toFixed(3)+')';
+    $('tg-glow').style.opacity=(v/5).toFixed(2);
+    $('tg-lamp').classList.toggle('on',v>2.5);
+    H($('tg-win'),st.vin===1);
+    const outW=$('tg-win').nextElementSibling?null:null;
+    H($('tg-vout'),v>0.5);
+    const m={
+      n0:'NMOS 传 0：完美输出 0V —— 强 0！这就是 CMOS 门里 NMOS 专管"下拉"的原因',
+      n1:'NMOS 传 1：输出充到 V_G−V_TH = 5−1.5 = 3.5V 就卡住 —— 弱 1！沟道越接近栅压越关自己',
+      p0:'PMOS 传 0：只能放到 |V_TH| = 1.5V —— 弱 0！和 NMOS 正好反过来',
+      p1:'PMOS 传 1：完美输出 5V —— 强 1！这就是 CMOS 门里 PMOS 专管"上拉"的原因',
+      t0:'TG 传 0：PMOS 的弱项由 NMOS 补 → 完美 0V',
+      t1:'TG 传 1：NMOS 的弱项由 PMOS 补 → 完美 5V —— 两个有缺陷的开关并联 = 一个完美的开关'
+    }[st.dev+st.vin];
+    $('tg-hint').textContent=m;
+  }
+  $('tg-vin').onchange=e=>{st.vin=e.target.checked?1:0;render();};
+  $('tg-bn').onclick=()=>{st.dev='n';render();};
+  $('tg-bp').onclick=()=>{st.dev='p';render();};
+  $('tg-bt').onclick=()=>{st.dev='t';render();};
+  render();
+})();
+
+/* ============ L3 XOR ============ */
+(function(){
+  const st={a:0,b:0};
+  function render(){
+    const ab=st.a?0:1, y=st.a^st.b;
+    H($('xo-a'),st.a);H($('xo-ainv'),st.a);H($('xo-ad'),st.a);
+    H($('xo-ab'),ab);
+    H($('xo-b'),st.b);H($('xo-binv'),st.b);H($('xo-bb'),ab);
+    $('xo-inv1').style.opacity=st.a?1:.45;
+    $('xo-inv2').style.opacity=ab?1:.45;
+    $('xo-tg1').classList.toggle('act',st.a===0);
+    $('xo-tg2').classList.toggle('act',st.a===1);
+    H($('xo-o1'),st.a===0&&st.b===1);
+    H($('xo-o2'),st.a===1&&st.b===0);
+    H($('xo-y'),y===1);
+    $('xo-lamp').classList.toggle('on',y===1);
+    $('xo-yv').textContent=y;
+    document.querySelectorAll('.xo-tr').forEach((r,i)=>r.setAttribute('class',i===st.a*2+st.b?'ttc xo-tr':'ttd xo-tr'));
+    $('xo-msg').textContent = st.a===0
+      ?`A=0 → TG1 导通（上栅 A̅=1、下栅 A=0，两管同开）→ Y 直通 B = ${st.b}`
+      :`A=1 → TG2 导通 → Y 直通 B̅ = ${st.b?0:1}（B 经下方反相器取反）→ Y=${y}`;
+  }
+  $('xo-sa').onchange=e=>{st.a=e.target.checked?1:0;render();};
+  $('xo-sb').onchange=e=>{st.b=e.target.checked?1:0;render();};
+  render();
+})();
+
+/* ============ L4 MUX ============ */
+(function(){
+  const st={s:0,a:0,b:0};
+  function render(){
+    const sb=st.s?0:1, y=st.s?st.b:st.a;
+    H($('mx-s'),st.s);H($('mx-sinv'),st.s);H($('mx-sd'),st.s);
+    H($('mx-sb'),sb);
+    $('mx-inv').style.opacity=st.s?1:.45;
+    H($('mx-a'),st.a);H($('mx-b'),st.b);
+    $('mx-tg1').classList.toggle('act',st.s===0);
+    $('mx-tg2').classList.toggle('act',st.s===1);
+    H($('mx-o1'),st.s===0&&st.a===1);
+    H($('mx-o2'),st.s===1&&st.b===1);
+    H($('mx-y'),y===1);
+    $('mx-lamp').classList.toggle('on',y===1);
+    $('mx-yv').textContent=y;
+  }
+  $('mx-ss').onchange=e=>{st.s=e.target.checked?1:0;render();};
+  $('mx-sa').onchange=e=>{st.a=e.target.checked?1:0;render();};
+  $('mx-sb').onchange=e=>{st.b=e.target.checked?1:0;render();};
+  render();
+})();
+
+/* ============ L5 延迟与功耗 ============ */
+(function(){
+  const st={a:0,running:false};
+  function rOpt(){
+    const W=+$('rc-w').value, CL=+$('rc-cl').value;
+    const R=10000/W, C=CL*2e-15, t=0.7*R*C;
+    $('rc-wv').textContent=W;$('rc-clv').textContent=CL;
+    $('rc-rr').textContent=(R/1000).toFixed(1)+'kΩ';
+    $('rc-cc').textContent=(C*1e15).toFixed(0)+'fF';
+    $('rc-tp').textContent=(t*1e12).toFixed(1)+' ps';
+    return t;
+  }
+  ['rc-w','rc-cl'].forEach(id=>$(id).oninput=rOpt);
+  function pOpt(){
+    const C=+$('rc-pc').value*0.1e-9, V=+$('rc-pv').value/10, f=+$('rc-pf').value*0.1e9;
+    $('rc-pcv').textContent=(C*1e9).toFixed(1)+' nF';
+    $('rc-pvv').textContent=V.toFixed(2)+' V';
+    $('rc-pfv').textContent=(f/1e9).toFixed(1)+' GHz';
+    const P=C*V*V*f;
+    $('rc-pw').innerHTML=(P>=10?P.toFixed(1):P.toFixed(2))+' <b>W</b>';
+  }
+  ['rc-pc','rc-pv','rc-pf'].forEach(id=>$(id).oninput=pOpt);
+  document.querySelectorAll('#l5 .tab[data-p]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#l5 .tab[data-p]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const [v,f,c]=b.dataset.p.split(',').map(Number);
+    $('rc-pv').value=Math.round(v*10);$('rc-pf').value=Math.round(f*10);$('rc-pc').value=Math.round(c*10);
+    pOpt();
+  });
+  function flip(){
+    if(st.running)return;
+    st.running=true;
+    const t=rOpt();
+    const dur=Math.min(2.2,Math.max(0.6,t/14*0.9));
+    const toA=st.a?0:1;
+    st.a=toA;
+    $('rc-sa').checked=!!st.a;
+    H($('rc-a'),st.a);H($('rc-an'),st.a);
+    $('rc-pm').style.opacity=st.a?0.3:1;
+    $('rc-nm').style.opacity=st.a?1:0.3;
+    const ms=[
+      ['rc-m1',0],['rc-m2',dur*0.28],['rc-m3',dur*0.56],
+      ['rc-m4',0],['rc-m5',dur*0.28],['rc-m6',dur*0.56]
+    ];
+    ['rc-m1','rc-m2','rc-m3'].forEach(id=>$(id).setAttribute('dur',dur+'s'));
+    ['rc-m4','rc-m5','rc-m6'].forEach(id=>$(id).setAttribute('dur',dur+'s'));
+    ms.forEach(([id])=>$(id).parentElement.style.opacity=0);
+    const grp=st.a?['rc-m1','rc-m2','rc-m3']:['rc-m4','rc-m5','rc-m6'];
+    $('rc-pg').setAttribute('opacity',1);
+    grp.forEach((id,i)=>setTimeout(()=>$(id).beginElement(),i*dur*280));
+    const lq=$('rc-lq');
+    lq.style.transition='transform '+dur+'s ease';
+    lq.style.transform='scaleY('+(st.a?0:1).toFixed(2)+')';
+    $('rc-vo').textContent='Vout = '+(st.a?'0.0':'5.0')+'V';
+    $('rc-dir').textContent=st.a?'放电：C → NMOS → GND（绿）':'充电：VDD → PMOS → C（金）';
+    $('rc-msg').textContent=`A 翻转为 ${st.a}：实测传播延迟 ${$('rc-tp').textContent}（动画按比例放慢 ${(dur).toFixed(1)}s）—— 每个门每次翻转都这样充放电一次`;
+    setTimeout(()=>{$('rc-pg').setAttribute('opacity',0);st.running=false;},dur*1000+500);
+  }
+  $('rc-flip').onclick=flip;
+  $('rc-sa').onchange=flip;
+  rOpt();pOpt();
+})();
+
+/* nav 高亮 */
+(function(){
+  const links=[...document.querySelectorAll('nav a')];
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)
+      links.forEach(l=>l.classList.toggle('cur',l.getAttribute('href')==='#'+e.target.id));});
+  },{rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('section.layer').forEach(s=>io.observe(s));
+})();
+</script>
+</body>
+</html>
