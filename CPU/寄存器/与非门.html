@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMOS与非门｜完整4端MOS，衬底正确接线，电平动态显示</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#eef2f6;font-family:"Microsoft YaHei",Consolas;color:#1f2933;padding:8px;}
+h1{font-size:15px;text-align:center;color:#2f5d8c;margin-bottom:4px;}
+.sub{font-size:11px;text-align:center;color:#555;margin-bottom:6px;}
+.wrap{max-width:740px;margin:0 auto;}
+.row{display:flex;align-items:flex-start;gap:10px;justify-content:center;flex-wrap:wrap;}
+.card{background:#fff;border-radius:8px;padding:8px;box-shadow:0 1px 5px #00000015;}
+.ctrl{width:195px;}
+svg{display:block}
+button{font-size:11px;padding:4px 7px;border-radius:4px;border:1px solid #b6c2cf;background:#fff;cursor:pointer;margin:1px;}
+button.stepbtn{background:#1677ff;color:#fff;border-color:#1677ff;}
+#msg{margin:6px auto;padding:5px 10px;background:#fff8e6;border-left:3px solid #ff9500;border-radius:0 4px 4px 0;font-size:12px;max-width:700px;}
+.note{font-size:10px;padding:5px;background:#f8fafc;border-left:3px solid #0b7285;margin-top:4px;line-height:1.4;}
+.state{display:flex;gap:4px;margin-top:6px;justify-content:center;}
+.state-item{width:54px;text-align:center;padding:3px;border:1px solid #dde3ea;border-radius:4px;background:#fdfdfd;}
+.state-val{font-size:16px;font-weight:bold;}
+.state-lab{font-size:10px;color:#667;}
+h3{font-size:12px;text-align:center;margin-bottom:4px;color:#2f5d8c;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>CMOS二输入与非门｜完整4端子MOS（G D S B衬底）</h1>
+<p class="sub">实线：动态信号线｜细虚线：衬底固定偏置；橙色=高1，灰色=低0</p>
+<div class="row">
+  <div class="card">
+    <h3>MOS真实原理图</h3>
+    <svg viewBox="0 0 340 240" id="mosSvg" width="310"></svg>
+  </div>
+  <div class="card" style="width:165px;">
+    <h3>IEC逻辑符号</h3>
+    <svg viewBox="0 0 170 130" id="logicSvg" width="145"></svg>
+  </div>
+  <div class="card ctrl">
+    <h3>控制输入</h3>
+    <div style="text-align:center">
+      <button id="a0">A=0</button><button id="a1">A=1</button>
+      <br>
+      <button id="b0">B=0</button><button id="b1">B=1</button>
+      <br>
+      <button class="stepbtn" id="rst">重置</button>
+    </div>
+    <div class="state">
+      <div class="state-item"><div class="state-lab">A</div><div class="state-val" id="va">0</div></div>
+      <div class="state-item"><div class="state-lab">B</div><div class="state-val" id="vb">0</div></div>
+      <div class="state-item"><div class="state-lab">Y</div><div class="state-val" id="vy">1</div></div>
+    </div>
+    <div class="note">
+Y = $\overline{A\cdot B}$<br>
+PMOS衬底B固定接VDD<br>
+NMOS衬底B固定接GND
+    </div>
+  </div>
+</div>
+<div id="msg">衬底线是固定偏置，电平永远不变；实线信号线随输入实时切换高低电平</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const LO='#b8c4d1';
+const HI='#ff8800';
+const VDDCOL='#c82423';
+const GNDCOL='#222222';
+const DASH='#777777'; //衬底虚线颜色
+const SvgMos=$('mosSvg');
+const SvgLogic=$('logicSvg');
+let A=0,B=0;
+
+const el=(tag,attr,par=SvgMos)=>{
+  const e=document.createElementNS(NS,tag);
+  for(let k in attr) e.setAttribute(k,attr[k]);
+  par.appendChild(e);
+  return e;
+};
+const txt=(x,y,str,sz=10,col="#222",anc="middle",par=SvgMos)=>{
+  const t=el('text',{x:x,y:y,'font-size':sz,fill:col,"text-anchor":anc,"font-family":"Consolas"},par);
+  t.textContent=str;
+  return t;
+};
+
+// PMOS：B衬底向上虚线接VDD
+function pmos(x,y,name){
+  const g={};
+  el('line',{x1:x,y1:y-14,x2:x,y2:y+14,stroke:"#222","stroke-width":1.8});
+  el('line',{x1:x-9,y1:y-7,x2:x+9,y2:y-7,stroke:"#222","stroke-width":1.8});
+  el('line',{x1:x-9,y1:y+7,x2:x+9,y2:y+7,stroke:"#222","stroke-width":1.8});
+  el('polygon',{points:`${x+5},${y-7} ${x+9},${y-3} ${x+9},${y-11}`,fill:"#222"});
+  g.g=el('line',{x1:x-14,y1:y,x2:x-8,y2:y,stroke:LO,"stroke-width":2});
+  g.gdot=el('circle',{cx:x-14,cy:y,r:3,fill:"#fff",stroke:LO});
+  // 衬底B，虚线向上连VDD
+  g.bline=el('line',{x1:x,y1:y-16,x2:x,y2:y-26,stroke:DASH,"stroke-width":1.2,"stroke-dasharray":"3 2"});
+  txt(x+12,y-5,"D",9);
+  txt(x+12,y+9,"S",9);
+  txt(x-20,y,name,9);
+  return g;
+}
+// NMOS：B衬底向下虚线接GND
+function nmos(x,y,name){
+  const g={};
+  el('line',{x1:x,y1:y-14,x2:x,y2:y+14,stroke:"#222","stroke-width":1.8});
+  el('line',{x1:x-9,y1:y-7,x2:x+9,y2:y-7,stroke:"#222","stroke-width":1.8});
+  el('line',{x1:x-9,y1:y+7,x2:x+9,y2:y+7,stroke:"#222","stroke-width":1.8});
+  el('polygon',{points:`${x-5},${y-7} ${x-9},${y-3} ${x-9},${y-11}`,fill:"#222"});
+  g.g=el('line',{x1:x-14,y1:y,x2:x-8,y2:y,stroke:LO,"stroke-width":2});
+  g.gdot=el('circle',{cx:x-14,cy:y,r:3,fill:"#fff",stroke:LO});
+  // 衬底B，虚线向下连GND
+  g.bline=el('line',{x1:x,y1:y+16,x2:x,y2:y+26,stroke:DASH,"stroke-width":1.2,"stroke-dasharray":"3 2"});
+  txt(x+12,y-5,"D",9);
+  txt(x+12,y+9,"S",9);
+  txt(x-20,y,name,9);
+  return g;
+}
+
+// VDD主线
+txt(24,22,"VDD",11,VDDCOL,"end");
+el('line',{x1:30,y1:22,x2:130,y2:22,stroke:VDDCOL,"stroke-width":2});
+const tp1=pmos(84,46,"TP1");
+const tp2=pmos(140,46,"TP2");
+// PMOS源极S接VDD
+el('line',{x1:84,y1:22,x2:84,y2:32,stroke:VDDCOL,"stroke-width":2});
+el('line',{x1:140,y1:22,x2:140,y2:32,stroke:VDDCOL,"stroke-width":2});
+// PMOS衬底虚线连VDD
+el('line',{x1:84,y1:22,x2:84,y2:20,stroke:DASH,"stroke-width":1.2,"stroke-dasharray":"3 2"});
+el('line',{x1:140,y1:22,x2:140,y2:20,stroke:DASH,"stroke-width":1.2,"stroke-dasharray":"3 2"});
+
+// PMOS漏极汇合输出Y
+const wY1=el('line',{x1:84,y1:60,x2:112,y2:60,stroke:LO,"stroke-width":2.2});
+const wY2=el('line',{x1:140,y1:60,x2:112,y2:60,stroke:LO,"stroke-width":2.2});
+
+const tn1=nmos(112,104,"TN1");
+const tn2=nmos(112,160,"TN2");
+// TN1 S → TN2 D 串联
+const wSer=el('line',{x1:112,y1:118,x2:112,y2:146,stroke:LO,"stroke-width":2.2});
+
+// GND主线
+txt(24,204,"GND",11,GNDCOL,"end");
+el('line',{x1:30,y1:204,x2:112,y2:204,stroke:GNDCOL,"stroke-width":2});
+el('line',{x1:112,y1:174,x2:112,y2:204,stroke:GNDCOL,"stroke-width":2});
+// NMOS衬底虚线连GND
+el('line',{x1:112,y1:204,x2:112,y2:184,stroke:DASH,"stroke-width":1.2,"stroke-dasharray":"3 2"});
+
+// A输入线
+txt(24,46,"A",11,"#222","end");
+const wA=el('line',{x1:30,y1:46,x2:68,y2:46,stroke:LO,"stroke-width":2.2});
+const dA=el('circle',{cx:30,cy:46,r:3,fill:"#fff",stroke:LO});
+el('line',{x1:68,y1:46,x2:76,y2:46,stroke:LO,"stroke-width":2.2});
+el('line',{x1:68,y1:46,x2:96,y2:104,stroke:LO,"stroke-width":2.2});
+
+// B输入线
+txt(24,160,"B",11,"#222","end");
+const wB=el('line',{x1:30,y1:160,x2:96,y2:160,stroke:LO,"stroke-width":2.2});
+const dB=el('circle',{cx:30,cy:160,r:3,fill:"#fff",stroke:LO});
+el('line',{x1:96,y1:160,x2:126,y2:46,stroke:LO,"stroke-width":2.2});
+
+// Y输出
+txt(192,62,"Y",11,"#222","start");
+const wYout=el('line',{x1:112,y1:60,x2:172,y2:60,stroke:LO,"stroke-width":2.2});
+const dY=el('circle',{cx:172,cy:60,r:3.5,fill:"#fff",stroke:LO});
+
+// IEC与非符号
+function drawLogic(parent){
+  const w=40,h=44;
+  el('rect',{x:22,y:32-h/2,width:w,height:h,stroke:"#087474","stroke-width":1.8,fill:"#fff"},parent);
+  txt(22+w/2,32+2,"&",13,"#222","middle",parent);
+  const in1=el('line',{x1:6,y1:24,x2:22,y2:24,stroke:LO,"stroke-width":2},parent);
+  const in2=el('line',{x1:6,y1:40,x2:22,y2:40,stroke:LO,"stroke-width":2},parent);
+  el('circle',{cx:22+w+4, cy:32, r:3.5, fill:"#fff", stroke:"#087474"},parent);
+  const out=el('line',{x1:22+w+7,y1:32,x2:70,y2:32,stroke:LO,"stroke-width":2},parent);
+  const dout=el('circle',{cx:70,cy:32,r:3,fill:"#fff",stroke:LO},parent);
+  txt(2,24,"A",9,"#222","end",parent);
+  txt(2,40,"B",9,"#222","end",parent);
+  txt(78,36,"Y",9,"#222","start",parent);
+  return {in1,in2,out,dout};
+}
+const sym=drawLogic(SvgLogic);
+
+function nand(a,b){return !(a&&b)?1:0;}
+function update(){
+  const Y=nand(A,B);
+  // A信号
+  dA.setAttribute("stroke",A?HI:LO);
+  wA.setAttribute("stroke",A?HI:LO);
+  tp1.g.setAttribute("stroke",A?HI:LO);
+  tp1.gdot.setAttribute("stroke",A?HI:LO);
+  tn1.g.setAttribute("stroke",A?HI:LO);
+  tn1.gdot.setAttribute("stroke",A?HI:LO);
+  // B信号
+  dB.setAttribute("stroke",B?HI:LO);
+  wB.setAttribute("stroke",B?HI:LO);
+  tp2.g.setAttribute("stroke",B?HI:LO);
+  tp2.gdot.setAttribute("stroke",B?HI:LO);
+  tn2.g.setAttribute("stroke",B?HI:LO);
+  tn2.gdot.setAttribute("stroke",B?HI:LO);
+
+  // Y主干
+  wY1.setAttribute("stroke",Y?HI:LO);
+  wY2.setAttribute("stroke",Y?HI:LO);
+  wYout.setAttribute("stroke",Y?HI:LO);
+  dY.setAttribute("stroke",Y?HI:LO);
+  // 中间串联通路
+  wSer.setAttribute("stroke", (A&&B) ? LO : HI);
+
+  // 逻辑符号线路
+  sym.in1.setAttribute("stroke",A?HI:LO);
+  sym.in2.setAttribute("stroke",B?HI:LO);
+  sym.out.setAttribute("stroke",Y?HI:LO);
+  sym.dout.setAttribute("stroke",Y?HI:LO);
+
+  $('va').textContent=A;
+  $('vb').textContent=B;
+  $('vy').textContent=Y;
+}
+$('a0').onclick=()=>{A=0;update();$('msg').innerText="A=0 → TP1 PMOS导通；Y连通VDD，Y=高电平1";};
+$('a1').onclick=()=>{A=1;update();$('msg').innerText="A=1 → TP1截止、TN1导通，输出由B决定";};
+$('b0').onclick=()=>{B=0;update();$('msg').innerText="B=0 → TP2 PMOS导通；Y连通VDD，Y=高电平1";};
+$('b1').onclick=()=>{B=1;update();$('msg').innerText="B=1 → TP2截止、TN2导通；A=1&B=1，串联NMOS全部导通，Y接GND=低0";};
+$('rst').onclick=()=>{A=0;B=0;update();$('msg').innerText="重置：A=0,B=0；两只PMOS导通，输出Y高电平1，衬底保持固定偏置不变"};
+update();
+</script>
+</body>
+</html>

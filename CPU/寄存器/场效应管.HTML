@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>4端NMOS场效应管动态演示 G D S B｜B站风格</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,Segoe UI}
+body{background:#0b0c10;color:#e0e0e0;padding:18px}
+.container{width:860px;margin:0 auto}
+#canvas{background:#050609;border:1px solid #223;border-radius:8px;display:block}
+.ctrl{margin-top:14px;display:grid;gap:10px}
+.row{display:flex;align-items:center;gap:12px}
+label{width:110px}
+input[type="range"]{flex:1}
+.val{width:55px;color:#5cf}
+.info{margin-top:10px;color:#99a;font-size:14px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="container">
+<canvas id="canvas" width="840" height="480"></canvas>
+<div class="ctrl">
+  <div class="row">
+    <label>Vgs (栅源)</label>
+    <input id="vgs" type="range" min="-0.5" max="5.0" step="0.05" value="0">
+    <span class="val" id="vgsVal">0.0V</span>
+  </div>
+  <div class="row">
+    <label>Vbs (衬底偏置)</label>
+    <input id="vbs" type="range" min="-4" max="0" step="0.05" value="0">
+    <span class="val" id="vbsVal">0.0V</span>
+  </div>
+</div>
+<div class="info">
+四引脚NMOS：G栅极｜D漏极｜S源极｜B衬底（独立第四根线）。Vbs越负，开启电压Vth越高（背栅效应）；Vgs＞Vth时反型层沟道形成，电子从S流向D，右侧同步绘制Id电流波形。
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const vgsSlider = document.getElementById("vgs");
+const vgsVal = document.getElementById("vgsVal");
+const vbsSlider = document.getElementById("vbs");
+const vbsVal = document.getElementById("vbsVal");
+
+let Vgs = 0;
+let Vbs = 0;
+const Vth0 = 1.15;
+const gamma = 0.38;
+const IdHistory = [];
+const MAX_HIST = 220;
+
+class Electron {
+  constructor(){this.reset()}
+  reset(){
+    this.x = 230 + Math.random()*18;
+    this.y = 302 + (Math.random()-0.5)*10;
+    this.vx = 0;
+    this.active = false;
+  }
+  update(flowOn){
+    if(!flowOn){this.reset();return}
+    if(!this.active && Math.random() < 0.025) this.active = true;
+    if(this.active){
+      this.vx = 1.4 + Math.random()*0.6;
+      this.x += this.vx;
+      if(this.x > 442) this.reset();
+    }
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 3.6, 0, Math.PI*2);
+    ctx.fillStyle="#4cf";
+    ctx.fill();
+  }
+}
+const electrons = Array.from({length:70}, ()=>new Electron());
+
+function calcVth(){
+  return Vth0 + gamma*(Math.sqrt(Math.abs(Vbs)+0.6)-Math.sqrt(0.6));
+}
+function calcId(vgs, vth){
+  if(vgs <= vth) return 0;
+  const sat = 0.22 * (vgs - vth)**2;
+  return Math.min(sat, 2.2);
+}
+
+function draw(){
+  ctx.clearRect(0,0,840,480);
+  const Vth = calcVth();
+  const Id = calcId(Vgs, Vth);
+  const channelOn = Vgs > Vth;
+
+  // ===== 左侧MOS剖面结构 =====
+  // P衬底
+  ctx.fillStyle="#481858";
+  ctx.fillRect(160,275,300,115);
+  ctx.fillStyle="#ddd";
+  ctx.font="14px system-ui";
+  ctx.fillText("P型衬底 Bulk(B)",255,378);
+
+  // N+源区 S
+  ctx.fillStyle="#197028";
+  ctx.fillRect(172,248,64,26);
+  ctx.fillText("S 源极",182,238);
+  // N+漏区 D
+  ctx.fillRect(384,248,64,26);
+  ctx.fillText("D 漏极",394,238);
+
+  // SiO2氧化层
+  ctx.fillStyle="#7898dd";
+  ctx.fillRect(244,226,170,13);
+  ctx.fillText("SiO₂ 氧化层",280,220);
+
+  // 栅极 G
+  ctx.fillStyle="#666";
+  ctx.fillRect(256,186,146,21);
+  ctx.fillText("G 栅极",308,178);
+
+  // 四根独立引线（重点：4根线 G D S B）
+  ctx.strokeStyle="#ddd";
+  ctx.lineWidth=2;
+  // G
+  ctx.beginPath();ctx.moveTo(328,186);ctx.lineTo(328,150);ctx.stroke();ctx.fillText("G",334,146);
+  // S
+  ctx.beginPath();ctx.moveTo(204,248);ctx.lineTo(204,208);ctx.stroke();ctx.fillText("S",210,204);
+  // D
+  ctx.beginPath();ctx.moveTo(416,248);ctx.lineTo(416,208);ctx.stroke();ctx.fillText("D",422,204);
+  // B 衬底引线，第四根！
+  ctx.beginPath();ctx.moveTo(328,390);ctx.lineTo(328,422);ctx.stroke();ctx.fillText("B",334,434);
+
+  // 导电沟道（渐变透明度）
+  if(channelOn){
+    const bright = Math.min(1, (Vgs-Vth)/2.4);
+    ctx.fillStyle=`rgba(50,215,255,${bright*0.68})`;
+    ctx.fillRect(242,278,174,14);
+  }
+
+  // 电子粒子动画
+  electrons.forEach(e=>{
+    e.update(channelOn);
+    e.draw();
+  })
+
+  // 顶部状态文字
+  ctx.font="16px";
+  ctx.fillStyle = channelOn ? "#4e8" : "#f56";
+  const stateTxt = channelOn
+    ? `✅ 导通 | Vth=${Vth.toFixed(2)}V  Id=${Id.toFixed(2)}mA`
+    : `❌ 截止 | Vth=${Vth.toFixed(2)}V  Id≈0`;
+  ctx.fillText(stateTxt, 200, 72);
+
+  // ===== 右侧 Id-Vgs 波形图（B站动画标配的电流曲线）=====
+  const graphX = 540;
+  const graphY = 80;
+  const graphW = 260;
+  const graphH = 320;
+  // 框
+  ctx.strokeStyle="#345";
+  ctx.lineWidth=1;
+  ctx.strokeRect(graphX,graphY,graphW,graphH);
+  ctx.fillStyle="#aaa";
+  ctx.font="13px";
+  ctx.fillText("Id (mA)", graphX+5, graphY+16);
+  ctx.fillText("Vgs(V)", graphX+graphW-32, graphY+graphH+16);
+
+  IdHistory.push(Id);
+  if(IdHistory.length > MAX_HIST) IdHistory.shift();
+
+  // 绘制曲线
+  ctx.beginPath();
+  ctx.strokeStyle="#5cf";
+  ctx.lineWidth=2;
+  for(let i=0;i<IdHistory.length;i++){
+    const xx = graphX + i*(graphW/MAX_HIST);
+    const yy = graphY + graphH - IdHistory[i]/2.2*graphH;
+    i===0 ? ctx.moveTo(xx,yy) : ctx.lineTo(xx,yy);
+  }
+  ctx.stroke();
+
+  // 当前值红点
+  const cx = graphX + IdHistory.length*(graphW/MAX_HIST);
+  const cy = graphY + graphH - Id/2.2*graphH;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4.5,0,Math.PI*2);
+  ctx.fillStyle="#f44";
+  ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+
+vgsSlider.oninput = ()=>{
+  Vgs = parseFloat(vgsSlider.value);
+  vgsVal.textContent = Vgs.toFixed(1)+"V";
+}
+vbsSlider.oninput = ()=>{
+  Vbs = parseFloat(vbsSlider.value);
+  vbsVal.textContent = Vbs.toFixed(1)+"V";
+}
+draw();
+</script>
+</body>
+</html>
