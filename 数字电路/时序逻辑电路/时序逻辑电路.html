@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时序逻辑电路模拟器 - D触发器 4位寄存器</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;}
+body{margin:0;padding:20px;background:#f3f6fa;color:#222;}
+h1{text-align:center;font-size:22px;color:#722ed1;}
+.wrap{max-width:1000px;margin:0 auto;}
+.box{background:#fff;padding:20px;border-radius:12px;box-shadow:0 3px 12px #00000015;}
+canvas{border:1px solid #ccc;background:#fcfcfc;border-radius:8px;display:block;margin:0 auto;}
+.ctrl{margin:16px 0;text-align:center;}
+button{padding:7px 14px;margin:4px;border-radius:6px;border:none;background:#722ed1;color:white;font-size:15px;cursor:pointer;}
+.info{margin-top:14px;padding:12px;background:#f7f0ff;border-radius:8px;line-height:1.7;}
+.info b{color:#722ed1;}
+</style>
+</head>
+<body>
+<h1>时序逻辑电路｜D触发器构成4位寄存器模拟器</h1>
+<div class="wrap">
+  <div class="box">
+    <div class="ctrl">
+      <p>数据D输入：
+        <button onclick="toggleD(0)">D3</button>
+        <button onclick="toggleD(1)">D2</button>
+        <button onclick="toggleD(2)">D1</button>
+        <button onclick="toggleD(3)">D0</button>
+        &nbsp;&nbsp;
+        <button onclick="clkPulse()">时钟 CLK 脉冲</button>
+        <button onclick="resetSeq()">异步复位RST</button>
+      </p>
+      <p>输入D=<span id="valD">0000</span> &nbsp; 寄存器输出Q=<span id="valQ">0000</span></p>
+    </div>
+    <canvas id="canvasSeq" width="900" height="350"></canvas>
+    <div class="info">
+      <b>🔹 时序逻辑核心特点：带记忆（触发器）、依赖时钟信号</b><br>
+      输出由【当前输入 + 之前保存的状态】共同决定。<br>
+      <strong>只有时钟上升沿到来的时候，D的值才会锁存到Q；时钟不变时，修改D，Q保持不变！</strong><br>
+      红色连线 = 高电平1，蓝色连线 = 低电平0。寄存器是CPU、单片机存储电路的基础单元。
+    </div>
+  </div>
+</div>
+
+<script>
+const cvSeq = document.getElementById('canvasSeq');
+const ctxSeq = cvSeq.getContext('2d');
+let D = [0,0,0,0];
+let Q = [0,0,0,0];
+let clk = 0;
+
+function updateSeqText(){
+  document.getElementById('valD').innerText = D.join('');
+  document.getElementById('valQ').innerText = Q.join('');
+}
+function toggleD(i){ D[i] = D[i]?0:1; updateSeqText(); drawSeq(); }
+function resetSeq(){ D=[0,0,0,0]; Q=[0,0,0,0]; clk=0; updateSeqText(); drawSeq(); }
+async function clkPulse(){
+  clk=1; drawSeq();
+  await sleep(280);
+  Q = [...D];
+  clk=0; drawSeq();
+  updateSeqText();
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function drawSeq(){
+  ctxSeq.clearRect(0,0,cvSeq.width,cvSeq.height);
+  const y0 = 160;
+  const dx = 200;
+  const xstart = 70;
+  const color = v=>v?'#e53935':'#2176d2';
+  for(let i=0;i<4;i++){
+    const x = xstart + i*dx;
+    ctxSeq.fillStyle='#f0f0f0';
+    ctxSeq.fillRect(x,y0-70,110,140);
+    ctxSeq.strokeStyle='#333';
+    ctxSeq.strokeRect(x,y0-70,110,140);
+    ctxSeq.fillStyle='#222';
+    ctxSeq.font="14px sans-serif";
+    ctxSeq.fillText(`DFF${i}`,x+40,y0);
+
+    // D输入
+    ctxSeq.beginPath();ctxSeq.strokeStyle=color(D[i]);ctxSeq.lineWidth=3;
+    ctxSeq.moveTo(x-30,y0-40);ctxSeq.lineTo(x,y0-40);ctxSeq.stroke();
+    ctxSeq.fillText(`D${3-i}`,x-50,y0-40);
+    // CLK时钟线
+    ctxSeq.beginPath();ctxSeq.strokeStyle=color(clk);ctxSeq.lineWidth=3;
+    ctxSeq.moveTo(x-30,y0+20);ctxSeq.lineTo(x,y0+20);ctxSeq.stroke();
+    ctxSeq.fillText('CLK',x-50,y0+20);
+    // Q输出
+    ctxSeq.beginPath();ctxSeq.strokeStyle=color(Q[i]);ctxSeq.lineWidth=3;
+    ctxSeq.moveTo(x+110,y0);ctxSeq.lineTo(x+140,y0);ctxSeq.stroke();
+    ctxSeq.fillText(`Q${3-i}`,x+145,y0);
+  }
+}
+updateSeqText();
+drawSeq();
+</script>
+</body>
+</html>

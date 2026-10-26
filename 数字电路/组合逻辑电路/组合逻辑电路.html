@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组合逻辑电路模拟器 - 4位全加器（ALU核心）</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;}
+body{margin:0;padding:20px;background:#f3f6fa;color:#222;}
+h1{text-align:center;font-size:22px;color:#164080;}
+.wrap{max-width:1000px;margin:0 auto;}
+.box{background:#fff;padding:20px;border-radius:12px;box-shadow:0 3px 12px #00000015;}
+canvas{border:1px solid #ccc;background:#fcfcfc;border-radius:8px;display:block;margin:0 auto;}
+.ctrl{margin:16px 0;text-align:center;}
+button{padding:7px 14px;margin:4px;border-radius:6px;border:none;background:#2362c9;color:white;font-size:15px;cursor:pointer;}
+.info{margin-top:14px;padding:12px;background:#edf4ff;border-radius:8px;line-height:1.7;}
+.info b{color:#164080;}
+</style>
+</head>
+<body>
+<h1>组合逻辑电路｜4位逐位全加器模拟器</h1>
+<div class="wrap">
+  <div class="box">
+    <div class="ctrl">
+      <p>输入A：
+        <button onclick="toggleA(0)">A3</button>
+        <button onclick="toggleA(1)">A2</button>
+        <button onclick="toggleA(2)">A1</button>
+        <button onclick="toggleA(3)">A0</button>
+        &nbsp;&nbsp;输入B：
+        <button onclick="toggleB(0)">B3</button>
+        <button onclick="toggleB(1)">B2</button>
+        <button onclick="toggleB(2)">B1</button>
+        <button onclick="toggleB(3)">B0</button>
+        &nbsp;&nbsp;<button onclick="resetComb()">清零</button>
+      </p>
+      <p>当前 A=<span id="valA">0000</span> &nbsp; B=<span id="valB">0000</span> &nbsp; 和 S=<span id="valS">0000</span> &nbsp; 进位 Cout=<span id="valC">0</span></p>
+    </div>
+    <canvas id="canvasComb" width="900" height="350"></canvas>
+    <div class="info">
+      <b>🔹 组合逻辑核心特点：无记忆单元、不需要时钟</b><br>
+      输出完全由<strong>当前时刻输入</strong>决定，输入一变，输出立刻更新。<br>
+      红色连线 = 高电平 1，蓝色连线 = 低电平 0。<br>
+      电路由4个全加器FA串联组成，是ALU运算电路的基础。
+    </div>
+  </div>
+</div>
+
+<script>
+const cvComb = document.getElementById('canvasComb');
+const ctxComb = cvComb.getContext('2d');
+let A = [0,0,0,0];
+let B = [0,0,0,0];
+let S = [0,0,0,0];
+let Cout = 0;
+
+function calcAdd(){
+  let cin = 0;
+  for(let i=3;i>=0;i--){
+    let s = A[i]^B[i]^cin;
+    let co = (A[i]&&B[i]) || (A[i]&&cin) || (B[i]&&cin);
+    S[i] = s;
+    cin = co;
+  }
+  Cout = cin;
+  updateCombText();
+}
+function updateCombText(){
+  document.getElementById('valA').innerText = A.join('');
+  document.getElementById('valB').innerText = B.join('');
+  document.getElementById('valS').innerText = S.join('');
+  document.getElementById('valC').innerText = Cout;
+}
+function toggleA(i){ A[i] = A[i]?0:1; calcAdd(); drawComb(); }
+function toggleB(i){ B[i] = B[i]?0:1; calcAdd(); drawComb(); }
+function resetComb(){ A=[0,0,0,0]; B=[0,0,0,0]; calcAdd(); drawComb(); }
+
+function drawComb(){
+  ctxComb.clearRect(0,0,cvComb.width,cvComb.height);
+  const y0 = 160;
+  const dx = 200;
+  const xstart = 70;
+  const color = v=>v?'#e53935':'#2176d2';
+  for(let i=0;i<4;i++){
+    const x = xstart + i*dx;
+    ctxComb.fillStyle='#f0f0f0';
+    ctxComb.fillRect(x,y0-70,110,140);
+    ctxComb.strokeStyle='#333';
+    ctxComb.strokeRect(x,y0-70,110,140);
+    ctxComb.fillStyle='#222';
+    ctxComb.font="14px sans-serif";
+    ctxComb.fillText(`FA${i}`,x+42,y0);
+
+    // A输入
+    ctxComb.beginPath();ctxComb.strokeStyle=color(A[i]);ctxComb.lineWidth=3;
+    ctxComb.moveTo(x-30,y0-40);ctxComb.lineTo(x,y0-40);ctxComb.stroke();
+    ctxComb.fillText(`A${3-i}`,x-50,y0-40);
+    // B输入
+    ctxComb.beginPath();ctxComb.strokeStyle=color(B[i]);ctxComb.lineWidth=3;
+    ctxComb.moveTo(x-30,y0+40);ctxComb.lineTo(x,y0+40);ctxComb.stroke();
+    ctxComb.fillText(`B${3-i}`,x-50,y0+40);
+    // S输出
+    ctxComb.beginPath();ctxComb.strokeStyle=color(S[i]);ctxComb.lineWidth=3;
+    ctxComb.moveTo(x+110,y0);ctxComb.lineTo(x+140,y0);ctxComb.stroke();
+    ctxComb.fillText(`S${3-i}`,x+145,y0);
+    // 进位链
+    if(i<3){
+      ctxComb.beginPath();ctxComb.strokeStyle=color(S[i]);ctxComb.lineWidth=3;
+      ctxComb.moveTo(x+110,y0+20);ctxComb.lineTo(x+dx,y0+20);ctxComb.stroke();
+      ctxComb.fillText('Cin',x+dx-25,y0+35);
+    }
+  }
+  // 最终进位
+  ctxComb.beginPath();ctxComb.strokeStyle=color(Cout);ctxComb.lineWidth=3;
+  ctxComb.moveTo(xstart+3*dx+110,y0+20);ctxComb.lineTo(xstart+3*dx+160,y0+20);ctxComb.stroke();
+  ctxComb.fillText('Cout',xstart+3*dx+165,y0+20);
+}
+calcAdd();
+drawComb();
+</script>
+</body>
+</html>
