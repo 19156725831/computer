@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模拟电路原理图｜同相比例运放</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;}
+body{margin:0;padding:20px;background:#faf4f0;color:#222;}
+h1{text-align:center;font-size:22px;color:#a83232;}
+.wrap{max-width:1000px;margin:0 auto;}
+.box{background:#fff;padding:20px;border-radius:12px;box-shadow:0 3px 12px #00000015;}
+canvas{border:1px solid #ccc;background:#fcfcfc;border-radius:8px;display:block;margin:0 auto;}
+.ctrl{margin:16px 0;text-align:center;}
+.info{margin-top:14px;padding:12px;background:#fff0ee;border-radius:8px;line-height:1.7;}
+.info b{color:#a83232;}
+</style>
+</head>
+<body>
+<h1>模拟电路原理图｜同相比例运算放大电路</h1>
+<div class="wrap">
+  <div class="box">
+    <div class="ctrl">
+      <p>输入电压 Vin：
+        <button onclick="addVin(0.2)">+0.2V</button>
+        <button onclick="addVin(-0.2)">-0.2V</button>
+        <button onclick="resetVin()">清零Vin</button>
+        &nbsp;&nbsp;反馈电阻 Rf：
+        <button onclick="addRf(2)">+2k</button>
+        <button onclick="addRf(-2)">-2k</button>
+      </p>
+      <p>Vin = <span id="txtVin">1.00</span>V &nbsp; Rf = <span id="txtRf">10</span>kΩ &nbsp; R1=2kΩ
+      &nbsp; 增益 Av=1+Rf/R1 = <span id="txtAv">6.00</span> &nbsp; Vout=<span id="txtVout">6.00</span>V</p>
+    </div>
+    <canvas id="canvasAmp" width="900" height="420"></canvas>
+    <div class="info">
+      <b>🔹 模拟放大电路（原理图）</b><br>
+      运放同相放大，理想运放虚短虚断。Av=1+Rf/R1。<br>
+      连线颜色：暖色电压高，冷色电压低。可以调节输入电压、反馈电阻，观察输出节点电压变化。
+    </div>
+  </div>
+</div>
+<script>
+const cvAmp = document.getElementById('canvasAmp');
+const ctxAmp = cvAmp.getContext('2d');
+const txtVin = document.getElementById('txtVin');
+const txtRf = document.getElementById('txtRf');
+const txtAv = document.getElementById('txtAv');
+const txtVout = document.getElementById('txtVout');
+
+let Vin = 1.0;
+let Rf = 10;
+const R1 = 2;
+
+function calc(){
+  const Av = 1 + Rf/R1;
+  const Vout = Vin * Av;
+  txtVin.innerText = Vin.toFixed(2);
+  txtRf.innerText = Rf.toFixed(0);
+  txtAv.innerText = Av.toFixed(2);
+  txtVout.innerText = Vout.toFixed(2);
+  draw(Vin,Vout);
+}
+function addVin(d){
+  Vin = Math.max(-5, Math.min(5, Vin+d));
+  calc();
+}
+function resetVin(){
+  Vin = 0; calc();
+}
+function addRf(d){
+  Rf = Math.max(1, Math.min(30, Rf+d));
+  calc();
+}
+
+function getColor(v){
+  // -5V ~ +5V 映射颜色
+  if(v>0) return `rgb(${Math.min(255, v/5*220+35)}, 60, 60)`;
+  else return `rgb(40, 100, ${Math.min(255, (-v)/5*220+35)})`;
+}
+
+function draw(Vin, Vout){
+  ctxAmp.clearRect(0,0,cvAmp.width,cvAmp.height);
+  const cx = 420;
+  const cy = 200;
+  // 运放三角
+  ctxAmp.beginPath();
+  ctxAmp.moveTo(cx-60, cy-70);
+  ctxAmp.lineTo(cx+60, cy);
+  ctxAmp.lineTo(cx-60, cy+70);
+  ctxAmp.closePath();
+  ctxAmp.fillStyle="#eee";
+  ctxAmp.fill();
+  ctxAmp.strokeStyle="#333";
+  ctxAmp.lineWidth=2;
+  ctxAmp.stroke();
+  ctxAmp.fillStyle="#222";
+  ctxAmp.font="14px sans-serif";
+  ctxAmp.fillText("+", cx-50, cy-20);
+  ctxAmp.fillText("-", cx-50, cy+25);
+  ctxAmp.fillText("OP", cx-15, cy-10);
+
+  // 同相输入 Vin
+  ctxAmp.strokeStyle=getColor(Vin);
+  ctxAmp.lineWidth=3;
+  ctxAmp.beginPath();
+  ctxAmp.moveTo(80, cy-20);
+  ctxAmp.lineTo(cx-60, cy-20);
+  ctxAmp.stroke();
+  ctxAmp.fillText("Vin", 40, cy-25);
+  ctxAmp.fillText(Vin.toFixed(2)+"V", 40, cy-5);
+
+  // 输出 Vout
+  ctxAmp.strokeStyle=getColor(Vout);
+  ctxAmp.lineWidth=3;
+  ctxAmp.beginPath();
+  ctxAmp.moveTo(cx+60, cy);
+  ctxAmp.lineTo(780, cy);
+  ctxAmp.stroke();
+  ctxAmp.fillText("Vout", 800, cy-5);
+  ctxAmp.fillText(Vout.toFixed(2)+"V", 800, cy+15);
+
+  // Rf 反馈：输出 → 反相端
+  ctxAmp.strokeStyle="#666";
+  ctxAmp.lineWidth=2;
+  ctxAmp.beginPath();
+  ctxAmp.moveTo(cx+60, cy);
+  ctxAmp.lineTo(cx+60, cy+100);
+  ctxAmp.lineTo(cx-60, cy+100);
+  ctxAmp.lineTo(cx-60, cy+20);
+  ctxAmp.stroke();
+  drawResistor(ctxAmp, cx, cy+100, "Rf="+Rf+"k");
+
+  // R1：反相端到GND
+  ctxAmp.beginPath();
+  ctxAmp.moveTo(cx-60, cy+100);
+  ctxAmp.lineTo(cx-60, cy+170);
+  ctxAmp.stroke();
+  drawResistor(ctxAmp, cx-60, cy+135, "R1=2k");
+  drawGnd(ctxAmp, cx-60, cy+175);
+}
+function drawResistor(ctx, x, y, label){
+  ctx.fillStyle="#fff";
+  ctx.fillRect(x-45,y-12,90,24);
+  ctx.strokeStyle="#333";
+  ctx.strokeRect(x-45,y-12,90,24);
+  ctx.fillStyle="#222";
+  ctx.font="13px sans-serif";
+  ctx.fillText(label, x-35, y+4);
+}
+function drawGnd(ctx,x,y){
+  ctx.beginPath();
+  ctx.moveTo(x-15,y);
+  ctx.lineTo(x+15,y);
+  ctx.moveTo(x-10,y+8);
+  ctx.lineTo(x+10,y+8);
+  ctx.moveTo(x-5,y+16);
+  ctx.lineTo(x+5,y+16);
+  ctx.strokeStyle="#333";
+  ctx.lineWidth=1.5;
+  ctx.stroke();
+}
+calc();
+</script>
+</body>
+</html>

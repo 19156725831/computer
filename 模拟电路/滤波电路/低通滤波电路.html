@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模拟电路原理图｜RC低通滤波器</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;}
+body{margin:0;padding:20px;background:#faf4f0;color:#222;}
+h1{text-align:center;font-size:22px;color:#a83232;}
+.wrap{max-width:1000px;margin:0 auto;}
+.box{background:#fff;padding:20px;border-radius:12px;box-shadow:0 3px 12px #00000015;}
+canvas{border:1px solid #ccc;background:#fcfcfc;border-radius:8px;display:block;margin:0 auto;}
+.ctrl{margin:16px 0;text-align:center;}
+.info{margin-top:14px;padding:12px;background:#fff0ee;border-radius:8px;line-height:1.7;}
+.info b{color:#a83232;}
+</style>
+</head>
+<body>
+<h1>模拟电路原理图｜RC低通滤波器</h1>
+<div class="wrap">
+  <div class="box">
+    <div class="ctrl">
+      <p>输入交流幅值 Vin：
+        <button onclick="addVin(0.2)">+0.2V</button>
+        <button onclick="addVin(-0.2)">-0.2V</button>
+        <button onclick="resetVin()">清零</button>
+        &nbsp;&nbsp;电阻R：
+        <button onclick="addR(2)">+2k</button>
+        <button onclick="addR(-2)">-2k</button>
+        &nbsp;&nbsp;信号频率 f：
+        <button onclick="addF(20)">+20Hz</button>
+        <button onclick="addF(-20)">-20Hz</button>
+      </p>
+      <p>Vin=<span id="txtVin">1.00</span>V &nbsp; R=<span id="txtR">10</span>kΩ &nbsp; C=0.1uF
+      &nbsp; 截止频率 fc=<span id="txtFc">159.2</span>Hz
+      &nbsp; 输出幅值 Vout=<span id="txtVout">0.95</span>V
+      &nbsp; 信号增益=<span id="txtGain">0.95</span></p>
+    </div>
+    <canvas id="canvasRC" width="900" height="400"></canvas>
+    <div class="info">
+      <b>🔹 RC低通滤波原理：允许低频通过，衰减高频</b><br>
+      ✅ f 远小于fc：增益≈1，信号几乎全部送到输出<br>
+      ❌ f 大于fc：增益变小，高频信号被电容泄放到地，被滤除<br>
+      连线颜色越红代表电位幅值越高；颜色越蓝代表幅值越低。
+    </div>
+  </div>
+</div>
+<script>
+const cvRC = document.getElementById('canvasRC');
+const ctxRC = cvRC.getContext('2d');
+const txtVin = document.getElementById('txtVin');
+const txtR = document.getElementById('txtR');
+const txtFc = document.getElementById('txtFc');
+const txtVout = document.getElementById('txtVout');
+const txtGain = document.getElementById('txtGain');
+
+let Vin = 1.0;
+let R = 10;
+let f = 50;
+const C = 0.1e-6;
+
+function calc(){
+  const Rval = R * 1000;
+  const fc = 1/(2*Math.PI*Rval*C);
+  const w = 2*Math.PI*f;
+  const wc = 2*Math.PI*fc;
+  const gain = 1 / Math.sqrt( 1 + (w/wc)*(w/wc) );
+  const Vout = Vin * gain;
+
+  txtVin.innerText = Vin.toFixed(2);
+  txtR.innerText = R.toFixed(0);
+  txtFc.innerText = fc.toFixed(1);
+  txtVout.innerText = Vout.toFixed(2);
+  txtGain.innerText = gain.toFixed(2);
+  draw(Vin, Vout);
+}
+function addVin(d){
+  Vin = Math.max(0, Math.min(3, Vin+d));
+  calc();
+}
+function resetVin(){
+  Vin=0;calc();
+}
+function addR(d){
+  R = Math.max(1, Math.min(30, R+d));
+  calc();
+}
+function addF(d){
+  f = Math.max(10, Math.min(800, f+d));
+  calc();
+}
+function getColor(v){
+  // 0~3V映射颜色
+  let ratio = v / 3;
+  if(ratio < 0) ratio = 0;
+  let r = Math.round(35 + ratio * 220);
+  let b = Math.round(255 - ratio * 190);
+  return `rgb(${r}, 60, ${b})`;
+}
+function draw(Vin, Vout){
+  ctxRC.clearRect(0,0,cvRC.width,cvRC.height);
+  const y = 200;
+  //输入线
+  ctxRC.strokeStyle=getColor(Vin);
+  ctxRC.lineWidth=3;
+  ctxRC.beginPath();
+  ctxRC.moveTo(60,y);
+  ctxRC.lineTo(200,y);
+  ctxRC.stroke();
+  ctxRC.fillStyle="#222";
+  ctxRC.font="14px sans-serif";
+  ctxRC.fillText("Vin",20,y-5);
+  ctxRC.fillText(Vin.toFixed(2)+"V",20,y+15);
+
+  //电阻R
+  drawResistor(ctxRC, 280, y, "R="+R+"k");
+  ctxRC.beginPath();
+  ctxRC.moveTo(200,y);
+  ctxRC.lineTo(235,y);
+  ctxRC.stroke();
+  ctxRC.beginPath();
+  ctxRC.moveTo(325,y);
+  ctxRC.lineTo(420,y);
+  ctxRC.stroke();
+
+  //电容C到地
+  ctxRC.strokeStyle="#666";
+  ctxRC.lineWidth=2;
+  ctxRC.beginPath();
+  ctxRC.moveTo(420,y);
+  ctxRC.lineTo(420,y+80);
+  ctxRC.stroke();
+  drawCap(ctxRC,420,y+40,"C=0.1uF");
+  drawGnd(ctxRC,420,y+85);
+
+  //输出Vout
+  ctxRC.strokeStyle=getColor(Vout);
+  ctxRC.lineWidth=3;
+  ctxRC.beginPath();
+  ctxRC.moveTo(420,y);
+  ctxRC.lineTo(780,y);
+  ctxRC.stroke();
+  ctxRC.fillText("Vout",800,y-5);
+  ctxRC.fillText(Vout.toFixed(2)+"V",800,y+15);
+}
+function drawResistor(ctx, x, y, label){
+  ctx.fillStyle="#fff";
+  ctx.fillRect(x-45,y-12,90,24);
+  ctx.strokeStyle="#333";
+  ctx.strokeRect(x-45,y-12,90,24);
+  ctx.fillStyle="#222";
+  ctx.font="13px sans-serif";
+  ctx.fillText(label, x-35, y+4);
+}
+function drawCap(ctx,x,y,label){
+  ctx.beginPath();
+  ctx.moveTo(x-18,y-10);ctx.lineTo(x+18,y-10);
+  ctx.moveTo(x-18,y+10);ctx.lineTo(x+10,y+10);
+  ctx.strokeStyle="#333";
+  ctx.lineWidth=2;
+  ctx.stroke();
+  ctx.fillText(label, x-25, y+30);
+}
+function drawGnd(ctx,x,y){
+  ctx.beginPath();
+  ctx.moveTo(x-15,y);
+  ctx.lineTo(x+15,y);
+  ctx.moveTo(x-10,y+8);
+  ctx.lineTo(x+10,y+8);
+  ctx.moveTo(x-5,y+16);
+  ctx.lineTo(x+5,y+16);
+  ctx.strokeStyle="#333";
+  ctx.lineWidth=1.5;
+  ctx.stroke();
+}
+calc();
+</script>
+</body>
+</html>
