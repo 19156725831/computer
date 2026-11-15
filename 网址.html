@@ -37,60 +37,53 @@
             transform: translateY(-2px);
         }
         
-        /* 调整了 h2 的样式，允许长句子换行，最多显示两行 */
+        /* 标题（网址）字体加粗、放大 */
         .card h2 {
-            margin: 0 0 8px 0;
-            font-size: 15px;
+            margin: 0 0 6px 0;
+            font-size: 17px; /* 字体调大 */
             color: #0969da;
             font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 下方的说明文字或普通网址 */
+        .card p {
+            margin: 0;
+            font-size: 13px;
+            color: #57606a;
             line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
-        .card p {
-            margin: 0;
-            font-size: 13px;
-            color: #57606a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .url {
-            font-size: 12px;
-            color: #8c959f;
-            margin-top: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
     </style>
 </head>
 <body>
 
     <main>
-        <!-- ================= 前 4 个固定网站（去掉了原标题，把说明当成了标题） ================= -->
+        <!-- ================= 前 4 个固定网站（网址在上放大，说明在下） ================= -->
         
         <a class="card" href="https://www.nandgame.com/" target="_blank" rel="noopener noreferrer">
-            <h2>手搓一台computer：最经典的从逻辑门到CPU闯关。</h2>
-            <div class="url">https://www.nandgame.com/</div>
+            <h2>www.nandgame.com</h2>
+            <p>手搓一台computer：最经典的从逻辑门到CPU闯关。</p>
         </a>
 
         <a class="card" href="https://www.nand2tetris.org/" target="_blank" rel="noopener noreferrer">
-            <h2>公认的计算机体系结构神课（配套模拟器）。</h2>
-            <div class="url">https://www.nand2tetris.org/</div>
+            <h2>www.nand2tetris.org</h2>
+            <p>公认的计算机体系结构神课（配套模拟器）。</p>
         </a>
 
         <a class="card" href="https://play.simten.dev/" target="_blank" rel="noopener noreferrer">
-            <h2>用 TypeScript 代码设计电路，从 NAND 到 CPU 闯关。</h2>
-            <div class="url">https://play.simten.dev/</div>
+            <h2>play.simten.dev</h2>
+            <p>用 TypeScript 代码设计电路，从 NAND 到 CPU 闯关。</p>
         </a>
 
         <a class="card" href="https://circuitverse.org/" target="_blank" rel="noopener noreferrer">
-            <h2>免费在线逻辑电路模拟器，可自由搭建。</h2>
-            <div class="url">https://circuitverse.org/</div>
+            <h2>circuitverse.org</h2>
+            <p>免费在线逻辑电路模拟器，可自由搭建。</p>
         </a>
 
         <!-- ================= 第 5 个到第 100 个（百度占位，格式完全未动） ================= -->
