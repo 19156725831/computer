@@ -1,25 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算机体系结构与工具导航</title>
     <style>
-        body { font-size: 24px; font-family: "Microsoft YaHei", sans-serif; padding: 40px; line-height: 1.6; }
-        a { color: #0366d6; text-decoration: none; }
-        p { margin-bottom: 25px; }
-        .desc { font-weight: bold; color: #333; }
+        /* 网页排版样式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+            background-color: #f6f8fa;
+            margin: 0;
+            padding: 20px;
+        }
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 14px 16px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: block;
+        }
+        .card:hover {
+            border-color: #0969da;
+            box-shadow: 0 4px 12px rgba(9, 105, 218, 0.15);
+            transform: translateY(-2px);
+        }
+        .card h2 {
+            margin: 0 0 6px 0;
+            font-size: 16px;
+            color: #0969da;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card p {
+            margin: 0;
+            font-size: 13px;
+            color: #57606a;
+            /* 允许描述文字换行两行，最多显示两行 */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .url {
+            font-size: 12px;
+            color: #8c959f;
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
-    <p class="desc">手搓一台computer (NandGame)：最经典的从逻辑门到CPU闯关。<br>
-    👉 <a href="https://www.nandgame.com/" target="_blank">https://www.nandgame.com/</a></p>
 
-    <p class="desc">Nand2Tetris：公认的计算机体系结构神课（配套模拟器）。<br>
-    👉 <a href="https://www.nand2tetris.org/" target="_blank">https://www.nand2tetris.org/</a></p>
+    <main>
+        <!-- ================= 前 4 个保留的网站 ================= -->
+        
+        <a class="card" href="https://www.nandgame.com/" target="_blank" rel="noopener noreferrer">
+            <h2>NandGame</h2>
+            <p>手搓一台computer：最经典的从逻辑门到CPU闯关。</p>
+            <div class="url">https://www.nandgame.com/</div>
+        </a>
 
-    <p class="desc">Simten：用 TypeScript 代码设计电路，从 NAND 到 CPU 闯关。<br>
-    👉 <a href="https://play.simten.dev/" target="_blank">https://play.simten.dev/</a></p>
+        <a class="card" href="https://www.nand2tetris.org/" target="_blank" rel="noopener noreferrer">
+            <h2>Nand2Tetris</h2>
+            <p>公认的计算机体系结构神课（配套模拟器）。</p>
+            <div class="url">https://www.nand2tetris.org/</div>
+        </a>
 
-    <p class="desc">CircuitVerse：免费在线逻辑电路模拟器，可自由搭建。<br>
-    👉 <a href="https://circuitverse.org/" target="_blank">https://circuitverse.org/</a></p>
+        <a class="card" href="https://play.simten.dev/" target="_blank" rel="noopener noreferrer">
+            <h2>Simten</h2>
+            <p>用 TypeScript 代码设计电路，从 NAND 到 CPU 闯关。</p>
+            <div class="url">https://play.simten.dev/</div>
+        </a>
+
+        <a class="card" href="https://circuitverse.org/" target="_blank" rel="noopener noreferrer">
+            <h2>CircuitVerse</h2>
+            <p>免费在线逻辑电路模拟器，可自由搭建。</p>
+            <div class="url">https://circuitverse.org/</div>
+        </a>
+
+        <!-- ================= 第 5 个到第 100 个（百度占位填充） ================= -->
+        
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 5</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 6</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 7</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 8</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 9</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 10</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 11</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 12</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 13</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 14</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 15</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 16</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 17</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 18</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 19</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 20</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 21</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 22</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 23</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 24</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 25</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 26</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 27</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 28</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 29</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 30</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 31</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 32</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 33</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 34</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 35</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 36</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 37</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 38</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 39</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 40</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 41</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 42</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 43</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 44</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 45</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 46</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 47</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 48</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 49</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 50</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 51</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 52</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 53</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 54</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 55</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 56</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 57</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 58</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 59</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 60</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 61</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 62</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 63</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 64</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 65</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 66</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 67</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 68</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 69</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 70</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 71</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 72</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 73</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 74</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 75</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 76</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 77</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 78</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 79</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 80</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 81</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 82</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 83</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 84</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 85</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 86</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 87</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 88</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 89</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 90</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 91</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 92</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 93</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 94</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 95</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 96</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 97</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 98</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 99</h2><p>https://www.baidu.com</p></a>
+        <a class="card" href="https://www.baidu.com" target="_blank" rel="noopener noreferrer"><h2>百度搜索 100</h2><p>https://www.baidu.com</p></a>
+
+    </main>
+
 </body>
 </html>
