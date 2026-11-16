@@ -202,7 +202,7 @@ void UpdateInputBox(InputBox& box, Vector2 mouse) {
     }
 }
 
-void DrawInputBoxSide(Font font, InputBox& box, float labelOffsetX = -50.0f, float labelOffsetY = 4.0f) {
+void DrawInputBoxSide(Font font, InputBox& box, float labelOffsetX = -100.0f, float labelOffsetY = 4.0f) {
     if (!box.valuePtr) return;
     DrawTextEx(font, box.label, (Vector2){box.rect.x + labelOffsetX, box.rect.y + labelOffsetY}, 16, 1, YELLOW); 
     DrawRectangleRec(box.rect, box.isActive ? DARKGRAY : BLACK);
@@ -221,7 +221,7 @@ int main(void) {
     SetTargetFPS(60);
 
     Font font = GetFontDefault(); 
-    const char* uiText = "0123456789.,:%/mkNθ°μ-+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz|物品生成环境参数全局地面角度动摩擦因数选中物体质量劲度系数原长阻尼力方向方块弹簧桌子高度摩擦拖拽到中间松开点击输入修改按回车确认删除全场未选中重力支持摩擦弹力应用修改"; 
+    const char* uiText = "0123456789.,:%/mkNθ°μ-+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz|物体环境参数全局地面角度动摩擦因数选中质量劲度系数原长阻尼力方向方块弹簧桌子高度拖拽到中间松开点击输入修改按回车确认删除全场未选中重力支持摩擦弹力应用修改"; 
     const char* paths[] = {"simkai.ttf", "simhei.ttf", "msyh.ttc", "C:/Windows/Fonts/simhei.ttf"};
     for (int i = 0; i < 4; i++) {
         if (FileExists(paths[i])) {
@@ -256,10 +256,10 @@ int main(void) {
     float editMass = 1.0f;
     float editForce[3] = {0.0f, 0.0f, 0.0f};
     float editAngle[3] = {0.0f, 0.0f, 0.0f};
-    float editTableHeight = 2.5f; // 桌子默认高度改为 2.5
+    float editTableHeight = 3.0f;
     float editTableFriction = 0.0f;
-    float editK = 1.0f;
-    float editL0 = 2.0f;
+    float editK = 20.0f;    // ★ 默认劲度 20
+    float editL0 = 1.0f;    // ★ 默认原长 1.0
     float editDamp = 0.5f;
 
     InputBox inAngle = { {0, 0, 80.0f, 25.0f}, "0", false, &world.groundAngleDeg, "地面角度" };
@@ -267,7 +267,6 @@ int main(void) {
     
     InputBox selMass = { {0, 0, 80.0f, 25.0f}, "", false, &editMass, "质量" };
     
-    // 【修复】标签硬编码，绝对不重叠
     InputBox selForce[3] = {
         { {0, 0, 50.0f, 25.0f}, "", false, &editForce[0], "力1" },
         { {0, 0, 50.0f, 25.0f}, "", false, &editForce[1], "力2" },
@@ -294,26 +293,27 @@ int main(void) {
         float scrH = (float)GetScreenHeight();
         float UI_RIGHT_WIDTH = 280.0f;
         float playAreaRight = scrW - UI_RIGHT_WIDTH;
-        Vector2 origin = { playAreaRight / 2.0f, scrH - 80.0f }; 
 
-        // 环境参数坐标
-        inAngle.rect = { playAreaRight + 160.0f, 290.0f, 80.0f, 25.0f };
-        inFric.rect = { playAreaRight + 160.0f, 325.0f, 80.0f, 25.0f };
+        // ★ 核心修改：世界原点 = 屏幕左下角，地面绕左下角旋转
+        // 角度 0 时地面贴屏幕底边；角度 37 时地面从左下角向右上倾斜
+        Vector2 origin = { 0.0f, (float)scrH }; 
+
+        inAngle.rect = { playAreaRight + 150.0f, 290.0f, 80.0f, 25.0f };
+        inFric.rect = { playAreaRight + 150.0f, 325.0f, 80.0f, 25.0f };
         
-        // 选中物体坐标 (并排布局)
-        selMass.rect = { playAreaRight + 160.0f, 400.0f, 80.0f, 25.0f };
+        selMass.rect = { playAreaRight + 150.0f, 400.0f, 80.0f, 25.0f };
+        
         for(int i=0; i<3; i++) {
-            // 左侧列：力 (x = 80)，右侧列：方向 (x = 200)
-            selForce[i].rect = { playAreaRight + 80.0f, 440.0f + i*40.0f, 50.0f, 25.0f };
-            selAngle[i].rect = { playAreaRight + 200.0f, 440.0f + i*40.0f, 50.0f, 25.0f };
+            selForce[i].rect = { playAreaRight + 100.0f, 440.0f + i*40.0f, 50.0f, 25.0f };
+            selAngle[i].rect = { playAreaRight + 220.0f, 440.0f + i*40.0f, 50.0f, 25.0f };
         }
 
-        selK.rect = { playAreaRight + 160.0f, 400.0f, 80.0f, 25.0f };
-        selL0.rect = { playAreaRight + 160.0f, 435.0f, 80.0f, 25.0f };
-        selDamp.rect = { playAreaRight + 160.0f, 470.0f, 80.0f, 25.0f };
+        selK.rect = { playAreaRight + 150.0f, 400.0f, 80.0f, 25.0f };
+        selL0.rect = { playAreaRight + 150.0f, 435.0f, 80.0f, 25.0f };
+        selDamp.rect = { playAreaRight + 150.0f, 470.0f, 80.0f, 25.0f };
 
-        selTableHeight.rect = { playAreaRight + 160.0f, 400.0f, 80.0f, 25.0f };
-        selTableFric.rect = { playAreaRight + 160.0f, 435.0f, 80.0f, 25.0f };
+        selTableHeight.rect = { playAreaRight + 150.0f, 400.0f, 80.0f, 25.0f };
+        selTableFric.rect = { playAreaRight + 150.0f, 435.0f, 80.0f, 25.0f };
         
         Rectangle btnApply = { playAreaRight + 30.0f, 580.0f, 220.0f, 35.0f };
         Rectangle btnDelete = { playAreaRight + 30.0f, scrH - 50.0f, 220.0f, 35.0f };
@@ -371,7 +371,7 @@ int main(void) {
                     selectedEntityId = entities.back().id; selectedSpringIdx = -1;
                 } 
                 else if (type == ITEM_TABLE) {
-                    float tableH = 2.5f; // 高度变高
+                    float tableH = 3.0f;
                     Vector2 tablePos = { mouseWorld.x, tableH / 2.0f }; 
                     Entity e = { nextId++, TYPE_TABLE, tablePos, {0,0}, 99999.0f, 3.0f, tableH, 0, 0, true, BROWN, false, 0.0f };
                     for(int i=0; i<3; i++) { e.pushForce[i] = 0.0f; e.pushAngleDeg[i] = 0.0f; }
@@ -386,11 +386,12 @@ int main(void) {
                         if (d < minD) { minD = d; target = &e; }
                     }
                     if (target) {
-                        Vector2 topW = { target->pos.x, target->pos.y + 2.0f };
+                        // ★ 锚点在方块上方 1.2m，原长 1.0m → 初始拉伸 0.2m，弹力 4N
+                        Vector2 topW = { target->pos.x, target->pos.y + 1.2f };
                         Entity a = { nextId++, TYPE_ANCHOR, topW, {0,0}, 99999.0f, 0, 0, 0.15f, 0, true, RED, false, 0.0f };
                         for(int i=0;i<3;i++){ a.pushForce[i]=0; a.pushAngleDeg[i]=0; }
                         entities.push_back(a);
-                        springs.push_back({entities.back().id, target->id, 1.0f, 2.0f, 0.5f}); 
+                        springs.push_back({entities.back().id, target->id, 20.0f, 1.0f, 0.5f}); 
                     } else {
                         Vector2 topW = { mouseWorld.x, mouseWorld.y + 1.0f };
                         Vector2 bottomW = { mouseWorld.x, mouseWorld.y - 1.0f };
@@ -399,7 +400,7 @@ int main(void) {
                         for(int i=0;i<3;i++){ a.pushForce[i]=0; a.pushAngleDeg[i]=0; b.pushForce[i]=0; b.pushAngleDeg[i]=0; }
                         entities.push_back(a);
                         entities.push_back(b);
-                        springs.push_back({entities[entities.size()-2].id, entities.back().id, 1.0f, 2.0f, 0.5f});
+                        springs.push_back({entities[entities.size()-2].id, entities.back().id, 20.0f, 1.0f, 0.5f});
                     }
                     selectedSpringIdx = springs.size() - 1; selectedEntityId = -1;
                 }
@@ -520,7 +521,7 @@ int main(void) {
                     } else if (selE->type == TYPE_TABLE) {
                         selE->height = editTableHeight;
                         selE->friction = editTableFriction;
-                        selE->pos.y = selE->height / 2.0f; // 强制贴地
+                        selE->pos.y = selE->height / 2.0f;
                     }
                 }
             } else if (selectedSpringIdx != -1 && selectedSpringIdx < springs.size()) {
@@ -576,7 +577,7 @@ int main(void) {
                     Vector2 forceVec = { e.pushForce[k] * cosf(pRad), e.pushForce[k] * sinf(pRad) };
                     totalActiveForce.x += forceVec.x;
                     totalActiveForce.y += forceVec.y;
-                    e.forces.push_back({ e.pushForce[k], { forceVec.x, -forceVec.y }, ORANGE });
+                    e.forces.push_back({ e.pushForce[k], { forceVec.x, -forceVec.y }, SKYBLUE });
                 }
             }
 
@@ -622,7 +623,10 @@ int main(void) {
                 }
             }
 
-            // 桌子碰撞
+            // ============================================================
+            // ★ 桌子碰撞：支持力由受力平衡决定（不再用 impact 冲量）
+            // ============================================================
+            bool onTable = false;
             for (auto& table : entities) {
                 if (table.type != TYPE_TABLE) continue;
                 float thickness = 0.2f; 
@@ -639,27 +643,45 @@ int main(void) {
 
                 if (eRight > tLeft && eLeft < tRight && eTop > tBottom && eBottom < tTop) {
                     e.pos.y = tTop + e.height/2;
-                    if (e.vel.y < 0) {
-                        float impact = -e.vel.y;
-                        e.vel.y = 0;
-                        
-                        float vt = e.vel.x;
-                        float maxFric = table.friction * (world.gravity * e.mass + impact * e.mass / dt);
-                        float fric = fmaxf(-maxFric, fminf(maxFric, -vt * e.mass / dt));
-                        e.vel.x += fric / e.mass * dt;
-                        if (fabsf(e.vel.x) < 0.01f) e.vel.x = 0;
-                        
-                        if (fabsf(fric) > 0.01f) e.forces.push_back({ fabsf(fric), {(fric>0?1.0f:-1.0f), 0}, YELLOW });
-                        float N = world.gravity * e.mass + impact * e.mass / dt;
-                        e.forces.push_back({ N, {0, -1}, GREEN });
+                    if (e.vel.y < 0) e.vel.y = 0;   // 只挡住下落速度
+                    onTable = true;
+
+                    // 支持力 = 主动力竖直分量的反向（重力+弹簧+推力）
+                    float N = fmaxf(0.0f, -totalActiveForce.y);
+                    if (N > 0.01f) e.forces.push_back({ N, {0, -1}, GREEN });
+
+                    // 摩擦力用正确的 N 计算（含静摩擦）
+                    float maxFric = table.friction * N;
+                    float vt = e.vel.x;
+                    float Ft = totalActiveForce.x;
+                    float fric = 0;
+
+                    if (fabsf(vt) < 0.05f) {
+                        if (fabsf(Ft) <= maxFric) {
+                            fric = -Ft;
+                            e.vel.x = 0;
+                        } else {
+                            fric = -copysignf(maxFric, Ft);
+                        }
+                    } else {
+                        fric = -copysignf(maxFric, vt);
                     }
+
+                    e.vel.x += fric / e.mass * dt;
+                    if (fabsf(e.vel.x) < 0.01f) e.vel.x = 0;
+
+                    if (fabsf(fric) > 0.01f)
+                        e.forces.push_back({ fabsf(fric), {(fric>0?1.0f:-1.0f), 0}, YELLOW });
+
+                    // 桌上时重力已由支持力抵消，只积分水平方向
+                    e.vel.x += totalActiveForce.x / e.mass * dt;
                 }
             }
 
             float normalDist = e.pos.x * n.x + e.pos.y * n.y;
             float halfHeight = (e.type == TYPE_BOX) ? (e.height / 2.0f) : e.radius;
             
-            if (normalDist <= halfHeight + 0.01f) { 
+            if (!onTable && normalDist <= halfHeight + 0.01f) { 
                 if (normalDist < halfHeight) {
                     float penetration = normalDist - halfHeight;
                     e.pos.x -= n.x * penetration;
@@ -711,7 +733,7 @@ int main(void) {
                 }
 
                 if (e.type == TYPE_BOX) e.angle = world.groundAngleDeg; 
-            } else {
+            } else if (!onTable) {
                 e.vel.x += totalActiveForce.x / e.mass * dt;
                 e.vel.y += totalActiveForce.y / e.mass * dt;
                 if (e.type == TYPE_BOX) e.angle = 0; 
@@ -735,11 +757,12 @@ int main(void) {
 
         BeginScissorMode(0, 0, (int)playAreaRight, (int)scrH);
             
+            // ★ 地面绘制：过左下角原点、按角度倾斜
             float tanA = tanf(world.groundAngleDeg * DEG2RAD);
-            float worldLeft = (0 - origin.x) / PPM;
+            float worldLeft = (0 - origin.x) / PPM;      // = 0，起点钉在左下角
             float worldRight = (playAreaRight - origin.x) / PPM;
             
-            Vector2 gL = { 0, origin.y - worldLeft * tanA * PPM };
+            Vector2 gL = { 0, origin.y - worldLeft * tanA * PPM };   // 恒为 (0, scrH)
             Vector2 gR = { playAreaRight, origin.y - worldRight * tanA * PPM };
             
             DrawTriangle((Vector2){0, scrH}, gL, gR, (Color){ 30, 41, 59, 255 });
@@ -840,7 +863,7 @@ int main(void) {
                 if (itemList[selectedItemIndex].type == ITEM_BOX) {
                     DrawRectanglePro((Rectangle){mouse.x, mouse.y, 0.8f*PPM, 0.8f*PPM}, (Vector2){0.8f*PPM/2, 0.8f*PPM/2}, 0, Fade(ORANGE, 0.6f));
                 } else if (itemList[selectedItemIndex].type == ITEM_TABLE) {
-                    DrawRectanglePro((Rectangle){mouse.x, mouse.y, 3.0f*PPM, 2.5f*PPM}, (Vector2){3.0f*PPM/2, 2.5f*PPM/2}, 0, Fade(BROWN, 0.6f));
+                    DrawRectanglePro((Rectangle){mouse.x, mouse.y, 3.0f*PPM, 3.0f*PPM}, (Vector2){3.0f*PPM/2, 3.0f*PPM/2}, 0, Fade(BROWN, 0.6f));
                 } else {
                     DrawCircleV(mouse, 10, Fade(PURPLE, 0.6f));
                 }
@@ -850,8 +873,7 @@ int main(void) {
         // 右侧 UI
         DrawRectangle((int)playAreaRight, 0, (int)UI_RIGHT_WIDTH, (int)scrH, (Color){ 25, 35, 55, 255 });
         
-        // 模块 1：物品生成
-        DrawTextEx(font, "1. 物品生成", (Vector2){playAreaRight + 20, 15}, 22, 2, SKYBLUE);
+        DrawTextEx(font, "1. 物体", (Vector2){playAreaRight + 20, 15}, 22, 2, SKYBLUE);
         for (int i = 0; i < itemList.size(); i++) {
             Rectangle rowRect = { playAreaRight + 20.0f, 40.0f + i * 45.0f, 240.0f, 40.0f };
             bool isSelected = (i == selectedItemIndex);
@@ -867,13 +889,11 @@ int main(void) {
             DrawTextEx(font, itemList[i].name, (Vector2){rowRect.x + 50.0f, rowRect.y + 10.0f}, 20, 1, WHITE);
         }
 
-        // 模块 2：环境参数
         DrawLine((int)playAreaRight, 230, (int)scrW, 230, GRAY);
         DrawTextEx(font, "2. 环境参数", (Vector2){playAreaRight + 20, 245}, 22, 2, SKYBLUE);
         DrawInputBoxSide(font, inAngle);
         DrawInputBoxSide(font, inFric);
 
-        // 模块 3：选中物体
         DrawLine((int)playAreaRight, 360, (int)scrW, 360, GRAY);
         DrawTextEx(font, "3. 选中物体", (Vector2){playAreaRight + 20, 375}, 22, 2, SKYBLUE);
         
@@ -884,8 +904,8 @@ int main(void) {
                 if (selE->type == TYPE_BOX) {
                     DrawInputBoxSide(font, selMass);
                     for(int i=0; i<3; i++) {
-                        DrawInputBoxSide(font, selForce[i], -40.0f);
-                        DrawInputBoxSide(font, selAngle[i], -45.0f);
+                        DrawInputBoxSide(font, selForce[i], -70.0f);
+                        DrawInputBoxSide(font, selAngle[i], -70.0f);
                     }
                 } else if (selE->type == TYPE_TABLE) {
                     DrawInputBoxSide(font, selTableHeight);
@@ -901,13 +921,11 @@ int main(void) {
             DrawTextEx(font, "点击场景中的物体进行编辑", (Vector2){playAreaRight + 30, 440}, 16, 2, DARKGRAY);
         }
 
-        // 应用修改按钮
         if (selectedEntityId != -1 || selectedSpringIdx != -1) {
             DrawRectangleRec(btnApply, CheckCollisionPointRec(mouse, btnApply) ? GREEN : DARKGREEN);
             DrawTextEx(font, "应用修改", (Vector2){btnApply.x + 70, btnApply.y + 8}, 20, 2, WHITE);
         }
 
-        // 删除按钮
         DrawRectangleRec(btnDelete, CheckCollisionPointRec(mouse, btnDelete) ? RED : MAROON);
         DrawTextEx(font, "删除选中", (Vector2){btnDelete.x + 70, btnDelete.y + 8}, 20, 2, WHITE);
 
